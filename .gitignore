@@ -1,0 +1,11 @@
+# Banco de dados
+database/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/

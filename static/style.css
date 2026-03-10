@@ -1,0 +1,768 @@
+/* ============================================
+   SISTEMA DE CONTROLE DE RIFA - Estilos
+   ============================================ */
+
+/* --- Reset & Base --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --cor-fundo: #0f1117;
+    --cor-superficie: #1a1d27;
+    --cor-card: #22253a;
+    --cor-borda: #2e3348;
+    --cor-texto: #e8eaf0;
+    --cor-texto-suave: #9097b0;
+    --cor-disponivel: #10b981;
+    --cor-disponivel-hover: #059669;
+    --cor-disponivel-glow: rgba(16, 185, 129, 0.25);
+    --cor-vendido: #ef4444;
+    --cor-vendido-hover: #dc2626;
+    --cor-vendido-glow: rgba(239, 68, 68, 0.25);
+    --cor-primaria: #6366f1;
+    --cor-primaria-hover: #4f46e5;
+    --cor-sucesso-bg: rgba(16, 185, 129, 0.12);
+    --cor-sucesso-borda: #10b981;
+    --cor-erro-bg: rgba(239, 68, 68, 0.12);
+    --cor-erro-borda: #ef4444;
+    --raio: 12px;
+    --raio-sm: 8px;
+    --sombra: 0 4px 24px rgba(0, 0, 0, 0.3);
+    --transicao: 0.2s ease;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--cor-fundo);
+    color: var(--cor-texto);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --- Header --- */
+.header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    padding: 2rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--cor-borda);
+    position: relative;
+    overflow: hidden;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    position: relative;
+    background: linear-gradient(135deg, #c7d2fe 0%, #e0e7ff 50%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header p {
+    color: var(--cor-texto-suave);
+    margin-top: 0.4rem;
+    font-size: 0.95rem;
+    position: relative;
+}
+
+/* --- Navegação --- */
+.nav {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--cor-superficie);
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.nav a {
+    color: var(--cor-texto-suave);
+    text-decoration: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--transicao);
+    border: 1px solid transparent;
+}
+
+.nav a:hover {
+    color: var(--cor-texto);
+    background: var(--cor-card);
+    border-color: var(--cor-borda);
+}
+
+.nav a.ativo {
+    color: #fff;
+    background: var(--cor-primaria);
+    border-color: var(--cor-primaria);
+}
+
+/* --- Container --- */
+.container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+}
+
+/* --- Estatísticas --- */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 1rem;
+    text-align: center;
+}
+
+.stat-card .numero {
+    font-size: 1.8rem;
+    font-weight: 800;
+    display: block;
+    line-height: 1.2;
+}
+
+.stat-card .label {
+    font-size: 0.75rem;
+    color: var(--cor-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.stat-card.disponivel .numero { color: var(--cor-disponivel); }
+.stat-card.vendido .numero { color: var(--cor-vendido); }
+.stat-card.total .numero { color: var(--cor-primaria); }
+
+/* --- Grade de Números --- */
+.grade {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    margin-bottom: 2rem;
+}
+
+.numero-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--raio-sm);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    position: relative;
+    user-select: none;
+}
+
+/* Número Disponível */
+.numero-cell.disponivel {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--cor-disponivel);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+.numero-cell.disponivel:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: var(--cor-disponivel);
+    transform: scale(1.08);
+    box-shadow: 0 0 16px var(--cor-disponivel-glow);
+}
+
+/* Número Vendido */
+.numero-cell.vendido {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--cor-vendido);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.numero-cell.vendido:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: var(--cor-vendido);
+    transform: scale(1.08);
+    box-shadow: 0 0 16px var(--cor-vendido-glow);
+}
+
+/* Número Selecionado */
+.numero-cell.selecionado {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.5);
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
+}
+
+.numero-cell.selecionado:hover {
+    background: rgba(251, 191, 36, 0.3);
+    border-color: #fbbf24;
+    transform: scale(1.1);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.35);
+}
+
+/* Legenda - Selecionado */
+.legenda-cor.selecionado-cor {
+    background: #fbbf24;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+}
+
+/* --- Barra Flutuante de Seleção --- */
+.barra-selecao {
+    position: fixed;
+    bottom: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);
+    z-index: 50;
+    transition: bottom 0.3s ease;
+    width: 90%;
+    max-width: 500px;
+}
+
+.barra-selecao.visivel {
+    bottom: 1.5rem;
+}
+
+.barra-selecao span {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fbbf24;
+}
+
+/* --- Tags de Números Selecionados (preview no modal) --- */
+.numeros-selecionados {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+    padding: 0.75rem;
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.num-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 6px;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+/* --- Legenda --- */
+.legenda {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem;
+    background: var(--cor-card);
+    border-radius: var(--raio);
+    border: 1px solid var(--cor-borda);
+}
+
+.legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--cor-texto-suave);
+}
+
+.legenda-cor {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+}
+
+.legenda-cor.disponivel-cor {
+    background: var(--cor-disponivel);
+    box-shadow: 0 0 8px var(--cor-disponivel-glow);
+}
+
+.legenda-cor.vendido-cor {
+    background: var(--cor-vendido);
+    box-shadow: 0 0 8px var(--cor-vendido-glow);
+}
+
+/* --- Modal / Overlay --- */
+.overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease;
+}
+
+.overlay.ativo {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal {
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--sombra);
+    animation: slideUp 0.25s ease;
+}
+
+.modal h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal h2 .badge {
+    background: var(--cor-primaria);
+    color: #fff;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+}
+
+/* --- Formulário --- */
+.form-grupo {
+    margin-bottom: 1rem;
+}
+
+.form-grupo label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cor-texto-suave);
+    margin-bottom: 0.4rem;
+}
+
+.form-grupo input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    color: var(--cor-texto);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: var(--transicao);
+    outline: none;
+}
+
+.form-grupo input:focus {
+    border-color: var(--cor-primaria);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.form-grupo input::placeholder {
+    color: var(--cor-texto-suave);
+    opacity: 0.6;
+}
+
+.form-acoes {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+/* --- Botões --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1.4rem;
+    border-radius: var(--raio-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: var(--transicao);
+    text-decoration: none;
+}
+
+.btn-salvar {
+    background: var(--cor-primaria);
+    color: #fff;
+    flex: 1;
+}
+
+.btn-salvar:hover {
+    background: var(--cor-primaria-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-cancelar {
+    background: var(--cor-card);
+    color: var(--cor-texto-suave);
+    border: 1px solid var(--cor-borda);
+}
+
+.btn-cancelar:hover {
+    background: var(--cor-borda);
+    color: var(--cor-texto);
+}
+
+.btn-excluir {
+    background: transparent;
+    color: var(--cor-vendido);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.btn-excluir:hover {
+    background: var(--cor-erro-bg);
+    border-color: var(--cor-vendido);
+}
+
+/* --- Info do número vendido (modal) --- */
+.info-vendido {
+    text-align: center;
+}
+
+.info-vendido .numero-grande {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--cor-vendido);
+    margin-bottom: 1rem;
+}
+
+.info-vendido .detalhe {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-vendido .detalhe span {
+    font-size: 0.95rem;
+    color: var(--cor-texto-suave);
+}
+
+.info-vendido .detalhe strong {
+    color: var(--cor-texto);
+}
+
+/* --- Mensagens Flash --- */
+.flash {
+    padding: 0.85rem 1.2rem;
+    border-radius: var(--raio-sm);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid;
+    animation: slideUp 0.3s ease;
+}
+
+.flash.sucesso {
+    background: var(--cor-sucesso-bg);
+    border-color: var(--cor-sucesso-borda);
+    color: var(--cor-disponivel);
+}
+
+.flash.erro {
+    background: var(--cor-erro-bg);
+    border-color: var(--cor-erro-borda);
+    color: var(--cor-vendido);
+}
+
+/* --- Tabela de Compradores --- */
+.tabela-wrapper {
+    overflow-x: auto;
+    border-radius: var(--raio);
+    border: 1px solid var(--cor-borda);
+}
+
+.tabela {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--cor-card);
+}
+
+.tabela th,
+.tabela td {
+    padding: 0.85rem 1rem;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.tabela th {
+    background: var(--cor-superficie);
+    color: var(--cor-texto-suave);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.tabela td {
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.tabela tr:last-child td {
+    border-bottom: none;
+}
+
+.tabela tr:hover td {
+    background: rgba(99, 102, 241, 0.04);
+}
+
+.tabela .num-col {
+    font-weight: 700;
+    color: var(--cor-primaria);
+    text-align: center;
+    width: 60px;
+}
+
+/* Mensagem vazia */
+.vazio {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--cor-texto-suave);
+}
+
+.vazio .icone {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.vazio p {
+    font-size: 1rem;
+}
+
+/* --- Grid de Rifas (página inicial) --- */
+.rifas-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.rifa-card {
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 1.5rem;
+    transition: var(--transicao);
+}
+
+.rifa-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08);
+}
+
+.rifa-card-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--cor-texto);
+    margin-bottom: 0.25rem;
+}
+
+.rifa-desc {
+    font-size: 0.85rem;
+    color: var(--cor-texto-suave);
+    margin-bottom: 0.15rem;
+}
+
+.rifa-card-stats {
+    display: flex;
+    gap: 1.25rem;
+    margin: 1rem 0;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--cor-borda);
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.rifa-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.rifa-stat-num {
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.rifa-stat-label {
+    font-size: 0.7rem;
+    color: var(--cor-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+}
+
+.total-cor { color: var(--cor-primaria); }
+.disponivel-cor { color: var(--cor-disponivel); }
+.vendido-cor { color: var(--cor-vendido); }
+
+.rifa-valor {
+    font-size: 0.85rem;
+    color: var(--cor-texto-suave);
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+.rifa-card-footer {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.rifa-data {
+    font-size: 0.75rem;
+    color: var(--cor-texto-suave);
+    opacity: 0.6;
+    margin-top: 0.75rem;
+}
+
+/* --- Info Valor (na cartela) --- */
+.info-valor {
+    text-align: center;
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--cor-texto-suave);
+}
+
+.info-valor strong {
+    color: var(--cor-disponivel);
+}
+
+/* --- Form Row (lado a lado) --- */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+/* --- Responsivo --- */
+@media (max-width: 600px) {
+    .header h1 {
+        font-size: 1.5rem;
+    }
+
+    .grade {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+    }
+
+    .numero-cell {
+        font-size: 0.85rem;
+    }
+
+    .stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .stat-card .numero {
+        font-size: 1.4rem;
+    }
+
+    .legenda {
+        gap: 1rem;
+        font-size: 0.8rem;
+    }
+
+    .modal {
+        padding: 1.5rem;
+    }
+
+    .tabela th,
+    .tabela td {
+        padding: 0.65rem 0.7rem;
+        font-size: 0.82rem;
+    }
+
+    .nav {
+        gap: 0.5rem;
+    }
+
+    .nav a {
+        padding: 0.5rem 1rem;
+        font-size: 0.82rem;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .rifa-card-stats {
+        gap: 0.75rem;
+    }
+}

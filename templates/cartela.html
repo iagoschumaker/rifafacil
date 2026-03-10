@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ rifa.nome }} - Controle de Rifa</title>
+    <meta name="description" content="Cartela da rifa: {{ rifa.nome }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Cabeçalho -->
+    <div class="header">
+        <h1>🎟️ {{ rifa.nome }}</h1>
+        {% if rifa.descricao %}
+        <p>{{ rifa.descricao }}</p>
+        {% else %}
+        <p>Clique nos números disponíveis para selecionar</p>
+        {% endif %}
+    </div>
+
+    <!-- Navegação -->
+    <nav class="nav">
+        <a href="{{ url_for('index') }}">← Voltar</a>
+        <a href="{{ url_for('cartela', rifa_id=rifa.id) }}" class="ativo">Cartela</a>
+        <a href="{{ url_for('compradores', rifa_id=rifa.id) }}">Compradores</a>
+    </nav>
+
+    <div class="container">
+
+        <!-- Mensagens Flash -->
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+            {% for categoria, mensagem in mensagens %}
+            <div class="flash {{ categoria }}">{{ mensagem }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Estatísticas -->
+        {% set vendidos_count = mapa_vendidos | length %}
+        {% set disponiveis_count = rifa.quantidade_numeros - vendidos_count %}
+        <div class="stats">
+            <div class="stat-card disponivel">
+                <span class="numero">{{ disponiveis_count }}</span>
+                <span class="label">Disponíveis</span>
+            </div>
+            <div class="stat-card vendido">
+                <span class="numero">{{ vendidos_count }}</span>
+                <span class="label">Vendidos</span>
+            </div>
+            <div class="stat-card total">
+                <span class="numero">{{ rifa.quantidade_numeros }}</span>
+                <span class="label">Total</span>
+            </div>
+        </div>
+
+        {% if rifa.valor_numero > 0 %}
+        <div class="info-valor">
+            Valor por número: <strong>R$ {{ '%.2f' | format(rifa.valor_numero) | replace('.', ',') }}</strong>
+        </div>
+        {% endif %}
+
+        <!-- Legenda -->
+        <div class="legenda">
+            <div class="legenda-item">
+                <span class="legenda-cor disponivel-cor"></span>
+                Disponível
+            </div>
+            <div class="legenda-item">
+                <span class="legenda-cor vendido-cor"></span>
+                Vendido
+            </div>
+            <div class="legenda-item">
+                <span class="legenda-cor selecionado-cor"></span>
+                Selecionado
+            </div>
+        </div>
+
+        <!-- Grade de Números -->
+        <div class="grade" id="gradeNumeros">
+            {% for i in range(1, rifa.quantidade_numeros + 1) %}
+            <div class="numero-cell {% if i in mapa_vendidos %}vendido{% else %}disponivel{% endif %}"
+                 data-numero="{{ i }}"
+                 {% if i in mapa_vendidos %}
+                 data-nome="{{ mapa_vendidos[i].nome }}"
+                 data-telefone="{{ mapa_vendidos[i].telefone or 'Não informado' }}"
+                 {% endif %}
+                 onclick="clicarNumero(this)">
+                {{ '%02d' % i if rifa.quantidade_numeros <= 99 else '%03d' % i }}
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <!-- Barra flutuante de seleção -->
+    <div class="barra-selecao" id="barraSelecao">
+        <span id="barraTexto">0 números selecionados</span>
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-cancelar" onclick="limparSelecao()">Limpar</button>
+            <button class="btn btn-salvar" onclick="abrirFormulario()">Registrar</button>
+        </div>
+    </div>
+
+    <!-- Modal de Compra (múltiplos números) -->
+    <div class="overlay" id="modalCompra">
+        <div class="modal">
+            <h2>Registrar Compra</h2>
+            <div class="numeros-selecionados" id="numerosPreview"></div>
+            <form action="{{ url_for('comprar', rifa_id=rifa.id) }}" method="POST">
+                <input type="hidden" name="numeros" id="inputNumeros">
+                <div class="form-grupo">
+                    <label for="inputNome">Nome da pessoa *</label>
+                    <input type="text" id="inputNome" name="nome" placeholder="Ex: João Silva" required>
+                </div>
+                <div class="form-grupo">
+                    <label for="inputTelefone">Telefone (opcional)</label>
+                    <input type="text" id="inputTelefone" name="telefone" placeholder="Ex: (11) 99999-9999">
+                </div>
+                <div class="form-acoes">
+                    <button type="button" class="btn btn-cancelar" onclick="fecharModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-salvar">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Info (número vendido) -->
+    <div class="overlay" id="modalInfo">
+        <div class="modal">
+            <div class="info-vendido">
+                <div class="numero-grande" id="infoNumero"></div>
+                <div class="detalhe">
+                    <span>Comprado por: <strong id="infoNome"></strong></span>
+                    <span>Telefone: <strong id="infoTelefone"></strong></span>
+                </div>
+                <button type="button" class="btn btn-cancelar" onclick="fecharModal()" style="width: 100%;">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const totalNumeros = {{ rifa.quantidade_numeros }};
+        const pad = totalNumeros > 99 ? 3 : 2;
+        let selecionados = new Set();
+
+        /**
+         * Ao clicar em um número:
+         * - Disponível -> alterna seleção (pode selecionar vários)
+         * - Vendido -> mostra info do comprador
+         */
+        function clicarNumero(el) {
+            const numero = parseInt(el.dataset.numero);
+
+            if (el.classList.contains('vendido')) {
+                // Mostra informações do comprador
+                document.getElementById('infoNumero').textContent = String(numero).padStart(pad, '0');
+                document.getElementById('infoNome').textContent = el.dataset.nome;
+                document.getElementById('infoTelefone').textContent = el.dataset.telefone;
+                document.getElementById('modalInfo').classList.add('ativo');
+                return;
+            }
+
+            // Alterna seleção do número disponível
+            if (selecionados.has(numero)) {
+                selecionados.delete(numero);
+                el.classList.remove('selecionado');
+                el.classList.add('disponivel');
+            } else {
+                selecionados.add(numero);
+                el.classList.remove('disponivel');
+                el.classList.add('selecionado');
+            }
+
+            atualizarBarra();
+        }
+
+        /**
+         * Atualiza a barra flutuante com a contagem de selecionados
+         */
+        function atualizarBarra() {
+            const barra = document.getElementById('barraSelecao');
+            const texto = document.getElementById('barraTexto');
+            const qtd = selecionados.size;
+
+            if (qtd > 0) {
+                barra.classList.add('visivel');
+                texto.textContent = qtd === 1
+                    ? '1 número selecionado'
+                    : qtd + ' números selecionados';
+            } else {
+                barra.classList.remove('visivel');
+            }
+        }
+
+        /**
+         * Limpa todas as seleções
+         */
+        function limparSelecao() {
+            selecionados.clear();
+            document.querySelectorAll('.numero-cell.selecionado').forEach(el => {
+                el.classList.remove('selecionado');
+                el.classList.add('disponivel');
+            });
+            atualizarBarra();
+        }
+
+        /**
+         * Abre o formulário com os números selecionados
+         */
+        function abrirFormulario() {
+            if (selecionados.size === 0) return;
+
+            const lista = Array.from(selecionados).sort((a, b) => a - b);
+
+            // Preenche o campo hidden com os números
+            document.getElementById('inputNumeros').value = lista.join(',');
+
+            // Mostra preview dos números selecionados
+            const preview = document.getElementById('numerosPreview');
+            preview.innerHTML = lista.map(n =>
+                '<span class="num-tag">' + String(n).padStart(pad, '0') + '</span>'
+            ).join('');
+
+            document.getElementById('inputNome').value = '';
+            document.getElementById('inputTelefone').value = '';
+            document.getElementById('modalCompra').classList.add('ativo');
+            setTimeout(() => document.getElementById('inputNome').focus(), 200);
+        }
+
+        function fecharModal() {
+            document.getElementById('modalCompra').classList.remove('ativo');
+            document.getElementById('modalInfo').classList.remove('ativo');
+        }
+
+        // Fecha modal ao clicar fora
+        document.querySelectorAll('.overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) fecharModal();
+            });
+        });
+
+        // Fecha modal com ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') fecharModal();
+        });
+
+        // Remove flash messages após 4 segundos
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                el.style.transition = '0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 4000);
+    </script>
+
+</body>
+</html>

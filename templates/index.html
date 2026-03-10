@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Rifa</title>
+    <meta name="description" content="Sistema simples para controle de múltiplas rifas.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Cabeçalho -->
+    <div class="header">
+        <h1>🎟️ Controle de Rifa</h1>
+        <p>Gerencie suas rifas de forma simples</p>
+    </div>
+
+    <div class="container">
+
+        <!-- Mensagens Flash -->
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+            {% for categoria, mensagem in mensagens %}
+            <div class="flash {{ categoria }}">{{ mensagem }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Botão Nova Rifa -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 1.25rem;">
+            <button class="btn btn-salvar" onclick="document.getElementById('modalNovaRifa').classList.add('ativo')">
+                + Nova Rifa
+            </button>
+        </div>
+
+        <!-- Lista de Rifas -->
+        {% if rifas %}
+        <div class="rifas-grid">
+            {% for rifa in rifas %}
+            <div class="rifa-card">
+                <div class="rifa-card-header">
+                    <h2>{{ rifa.nome }}</h2>
+                    {% if rifa.descricao %}
+                    <p class="rifa-desc">{{ rifa.descricao }}</p>
+                    {% endif %}
+                </div>
+                <div class="rifa-card-stats">
+                    <div class="rifa-stat">
+                        <span class="rifa-stat-num total-cor">{{ rifa.quantidade_numeros }}</span>
+                        <span class="rifa-stat-label">Total</span>
+                    </div>
+                    <div class="rifa-stat">
+                        <span class="rifa-stat-num disponivel-cor">{{ stats[rifa.id].disponiveis }}</span>
+                        <span class="rifa-stat-label">Disponíveis</span>
+                    </div>
+                    <div class="rifa-stat">
+                        <span class="rifa-stat-num vendido-cor">{{ stats[rifa.id].vendidos }}</span>
+                        <span class="rifa-stat-label">Vendidos</span>
+                    </div>
+                </div>
+                {% if rifa.valor_numero > 0 %}
+                <div class="rifa-valor">
+                    R$ {{ '%.2f' | format(rifa.valor_numero) | replace('.', ',') }} por número
+                </div>
+                {% endif %}
+                <div class="rifa-card-footer">
+                    <a href="{{ url_for('cartela', rifa_id=rifa.id) }}" class="btn btn-salvar" style="flex: 1;">Abrir Cartela</a>
+                    <form action="{{ url_for('excluir_rifa', rifa_id=rifa.id) }}" method="POST" style="margin:0;"
+                          onsubmit="return confirm('Excluir a rifa &quot;{{ rifa.nome }}&quot; e todas as suas compras?')">
+                        <button type="submit" class="btn btn-excluir">Excluir</button>
+                    </form>
+                </div>
+                <div class="rifa-data">Criada em {{ rifa.data_criacao }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="vazio">
+            <div class="icone">🎟️</div>
+            <p>Nenhuma rifa cadastrada ainda.</p>
+            <p style="color: var(--cor-texto-suave); font-size: 0.9rem; margin-top: 0.5rem;">
+                Clique em <strong>"+ Nova Rifa"</strong> para começar.
+            </p>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Modal Nova Rifa -->
+    <div class="overlay" id="modalNovaRifa">
+        <div class="modal">
+            <h2>Nova Rifa</h2>
+            <form action="{{ url_for('nova_rifa') }}" method="POST">
+                <div class="form-grupo">
+                    <label for="inputNomeRifa">Nome da rifa *</label>
+                    <input type="text" id="inputNomeRifa" name="nome" placeholder="Ex: Rifa Beneficente" required>
+                </div>
+                <div class="form-grupo">
+                    <label for="inputDescricao">Descrição (opcional)</label>
+                    <input type="text" id="inputDescricao" name="descricao" placeholder="Ex: Prêmio: TV 50 polegadas">
+                </div>
+                <div class="form-row">
+                    <div class="form-grupo">
+                        <label for="inputQtd">Quantidade de números *</label>
+                        <input type="number" id="inputQtd" name="quantidade_numeros" min="1" max="1000" value="100" required>
+                    </div>
+                    <div class="form-grupo">
+                        <label for="inputValor">Valor por número (R$)</label>
+                        <input type="number" id="inputValor" name="valor_numero" min="0" step="0.01" value="0" placeholder="0,00">
+                    </div>
+                </div>
+                <div class="form-acoes">
+                    <button type="button" class="btn btn-cancelar" onclick="fecharModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-salvar">Criar Rifa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function fecharModal() {
+            document.getElementById('modalNovaRifa').classList.remove('ativo');
+        }
+
+        // Fecha modal ao clicar fora
+        document.querySelectorAll('.overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) fecharModal();
+            });
+        });
+
+        // Fecha modal com ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') fecharModal();
+        });
+
+        // Remove flash após 4s
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                el.style.transition = '0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 4000);
+    </script>
+
+</body>
+</html>

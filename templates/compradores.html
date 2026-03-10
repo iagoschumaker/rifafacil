@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compradores - {{ rifa.nome }}</title>
+    <meta name="description" content="Lista de compradores da rifa: {{ rifa.nome }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Cabeçalho -->
+    <div class="header">
+        <h1>🎟️ {{ rifa.nome }}</h1>
+        <p>Lista de compradores</p>
+    </div>
+
+    <!-- Navegação -->
+    <nav class="nav">
+        <a href="{{ url_for('index') }}">← Voltar</a>
+        <a href="{{ url_for('cartela', rifa_id=rifa.id) }}">Cartela</a>
+        <a href="{{ url_for('compradores', rifa_id=rifa.id) }}" class="ativo">Compradores</a>
+    </nav>
+
+    <div class="container">
+
+        <!-- Mensagens Flash -->
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+            {% for categoria, mensagem in mensagens %}
+            <div class="flash {{ categoria }}">{{ mensagem }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if compradores %}
+        <div class="tabela-wrapper">
+            <table class="tabela">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Nº</th>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Data</th>
+                        <th style="text-align: center;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in compradores %}
+                    <tr>
+                        <td class="num-col">{{ '%02d' % c.numero if rifa.quantidade_numeros <= 99 else '%03d' % c.numero }}</td>
+                        <td>{{ c.nome }}</td>
+                        <td>{{ c.telefone or '—' }}</td>
+                        <td>{{ c.data_compra }}</td>
+                        <td style="text-align: center;">
+                            <form action="{{ url_for('excluir_compra', rifa_id=rifa.id, compra_id=c.id) }}" method="POST"
+                                  onsubmit="return confirm('Excluir o número {{ '%02d' % c.numero }} ({{ c.nome }})?')">
+                                <button type="submit" class="btn btn-excluir">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="vazio">
+            <div class="icone">📋</div>
+            <p>Nenhum número vendido nesta rifa.</p>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                el.style.transition = '0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 4000);
+    </script>
+
+</body>
+</html>
