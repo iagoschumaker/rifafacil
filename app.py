@@ -7,9 +7,17 @@ import os
 import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__)
 app.secret_key = 'rifa-facil-2026'
+
+# Prefixo para rodar em schumaker.com.br/rifafacil
+APPLICATION_PREFIX = os.environ.get('APP_PREFIX', '/rifafacil')
+app.config['APPLICATION_ROOT'] = APPLICATION_PREFIX
+
+# Corrige headers quando atrás de proxy reverso (Nginx)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # --- Configuração do Banco de Dados ---
 DATABASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database')
