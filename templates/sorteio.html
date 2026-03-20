@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteio - {{ rifa.nome }}</title>
+    <meta name="description" content="Sorteador de números da rifa: {{ rifa.nome }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- Cabeçalho -->
+    <div class="header">
+        <h1>🎰 Sorteio</h1>
+        <p>{{ rifa.nome }}</p>
+    </div>
+
+    <!-- Navegação -->
+    <nav class="nav">
+        <a href="{{ url_for('index') }}">← Voltar</a>
+        <a href="{{ url_for('cartela', rifa_id=rifa.id) }}">Cartela</a>
+        <a href="{{ url_for('compradores', rifa_id=rifa.id) }}">Compradores</a>
+        <a href="{{ url_for('sorteio', rifa_id=rifa.id) }}" class="ativo">Sorteio</a>
+    </nav>
+
+    <div class="container">
+
+        <!-- Mensagens Flash -->
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+            {% for categoria, mensagem in mensagens %}
+            <div class="flash {{ categoria }}">{{ mensagem }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Info -->
+        <div class="sorteio-info">
+            <div class="stat-card total">
+                <span class="numero">{{ rifa.quantidade_numeros }}</span>
+                <span class="label">Total</span>
+            </div>
+            <div class="stat-card vendido">
+                <span class="numero">{{ vendidos_count }}</span>
+                <span class="label">Vendidos</span>
+            </div>
+            <div class="stat-card disponivel">
+                <span class="numero">{{ rifa.quantidade_numeros - vendidos_count }}</span>
+                <span class="label">Disponíveis</span>
+            </div>
+        </div>
+
+        <!-- Formulário de Sorteio -->
+        <div class="sorteio-form-card">
+            <h2>⚙️ Configurar Sorteio</h2>
+
+            <div class="form-grupo">
+                <label for="selectFonte">Sortear entre</label>
+                <select id="selectFonte" class="form-select">
+                    <option value="todos">Todos os números</option>
+                    <option value="vendidos">Apenas vendidos</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-grupo">
+                    <label for="inputMin">Número mínimo</label>
+                    <input type="number" id="inputMin" value="1" min="1" max="{{ rifa.quantidade_numeros }}">
+                </div>
+                <div class="form-grupo">
+                    <label for="inputMax">Número máximo</label>
+                    <input type="number" id="inputMax" value="{{ rifa.quantidade_numeros }}" min="1" max="{{ rifa.quantidade_numeros }}">
+                </div>
+            </div>
+
+            <div class="form-grupo">
+                <label for="inputQtd">Quantidade de sorteados</label>
+                <input type="number" id="inputQtd" value="1" min="1" max="100">
+            </div>
+
+            <button class="btn btn-sortear" id="btnSortear" onclick="iniciarSorteio()">
+                🎰 Sortear!
+            </button>
+        </div>
+
+        <!-- Área de Animação do Sorteio -->
+        <div class="sorteio-animacao" id="areaAnimacao" style="display: none;">
+            <div class="slot-machine" id="slotMachine">
+                <div class="slot-display" id="slotDisplay">00</div>
+            </div>
+            <p class="sorteio-status" id="sorteioStatus">Sorteando...</p>
+        </div>
+
+        <!-- Resultado do Sorteio -->
+        <div class="sorteio-resultado" id="areaResultado" style="display: none;">
+            <h2>🏆 Resultado do Sorteio</h2>
+            <div class="resultado-lista" id="resultadoLista"></div>
+            <button class="btn btn-cancelar" onclick="limparResultado()" style="margin-top: 1rem; width: 100%;">
+                Novo Sorteio
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;"></canvas>
+
+    <script>
+        const rifaId = {{ rifa.id }};
+        const totalNumeros = {{ rifa.quantidade_numeros }};
+        const pad = totalNumeros > 99 ? 3 : 2;
+
+        async function iniciarSorteio() {
+            const btn = document.getElementById('btnSortear');
+            const fonte = document.getElementById('selectFonte').value;
+            const numMin = parseInt(document.getElementById('inputMin').value) || 1;
+            const numMax = parseInt(document.getElementById('inputMax').value) || totalNumeros;
+            const quantidade = parseInt(document.getElementById('inputQtd').value) || 1;
+
+            // Esconde resultado anterior
+            document.getElementById('areaResultado').style.display = 'none';
+
+            // Mostra animação
+            const areaAnimacao = document.getElementById('areaAnimacao');
+            areaAnimacao.style.display = 'block';
+            document.getElementById('sorteioStatus').textContent = 'Sorteando...';
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Sorteando...';
+
+            // Animação de números girando
+            const slotDisplay = document.getElementById('slotDisplay');
+            let animInterval = setInterval(() => {
+                const rnd = Math.floor(Math.random() * (numMax - numMin + 1)) + numMin;
+                slotDisplay.textContent = String(rnd).padStart(pad, '0');
+                slotDisplay.classList.add('spinning');
+            }, 80);
+
+            try {
+                // Faz a requisição ao backend
+                const response = await fetch(`{{ url_for('sortear', rifa_id=rifa.id) }}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        quantidade: quantidade,
+                        fonte: fonte,
+                        num_min: numMin,
+                        num_max: numMax
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.erro) {
+                    clearInterval(animInterval);
+                    slotDisplay.classList.remove('spinning');
+                    document.getElementById('sorteioStatus').textContent = data.erro;
+                    btn.disabled = false;
+                    btn.textContent = '🎰 Sortear!';
+                    return;
+                }
+
+                // Animação de desaceleração
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                clearInterval(animInterval);
+
+                // Revela os números um por um
+                const sorteados = data.sorteados;
+                for (let i = 0; i < sorteados.length; i++) {
+                    slotDisplay.textContent = String(sorteados[i].numero).padStart(pad, '0');
+                    slotDisplay.classList.remove('spinning');
+                    slotDisplay.classList.add('reveal');
+
+                    document.getElementById('sorteioStatus').textContent =
+                        `Número ${i + 1} de ${sorteados.length}`;
+
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    slotDisplay.classList.remove('reveal');
+                }
+
+                // Esconde animação
+                areaAnimacao.style.display = 'none';
+
+                // Mostra resultado
+                exibirResultado(sorteados);
+
+                // Confetti!
+                dispararConfetti();
+
+            } catch (err) {
+                clearInterval(animInterval);
+                console.error('Erro:', err);
+                document.getElementById('sorteioStatus').textContent = 'Erro ao sortear. Tente novamente.';
+            }
+
+            btn.disabled = false;
+            btn.textContent = '🎰 Sortear!';
+        }
+
+        function exibirResultado(sorteados) {
+            const area = document.getElementById('areaResultado');
+            const lista = document.getElementById('resultadoLista');
+
+            lista.innerHTML = '';
+
+            sorteados.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'resultado-card';
+                card.style.animationDelay = (index * 0.15) + 's';
+
+                const posicao = sorteados.length > 1
+                    ? `<div class="resultado-posicao">${index + 1}º</div>`
+                    : '';
+
+                const compradorInfo = item.nome
+                    ? `<div class="resultado-comprador">
+                            <span class="resultado-icon">👤</span>
+                            <span>${item.nome}</span>
+                       </div>
+                       ${item.telefone ? `<div class="resultado-telefone"><span class="resultado-icon">📱</span><span>${item.telefone}</span></div>` : ''}`
+                    : `<div class="resultado-disponivel">Número disponível</div>`;
+
+                card.innerHTML = `
+                    ${posicao}
+                    <div class="resultado-numero">${String(item.numero).padStart(pad, '0')}</div>
+                    ${compradorInfo}
+                `;
+
+                lista.appendChild(card);
+            });
+
+            area.style.display = 'block';
+        }
+
+        function limparResultado() {
+            document.getElementById('areaResultado').style.display = 'none';
+        }
+
+        // ====== CONFETTI ======
+        function dispararConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const pieces = [];
+            const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+            const total = 120;
+
+            for (let i = 0; i < total; i++) {
+                pieces.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    w: Math.random() * 10 + 4,
+                    h: Math.random() * 6 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: Math.random() * 3 + 2,
+                    rotation: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 10,
+                    opacity: 1
+                });
+            }
+
+            let frame = 0;
+            const maxFrames = 180;
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                frame++;
+
+                pieces.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.05;
+                    p.rotation += p.rotSpeed;
+
+                    if (frame > maxFrames - 40) {
+                        p.opacity -= 0.025;
+                    }
+
+                    if (p.opacity <= 0) return;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    ctx.globalAlpha = Math.max(0, p.opacity);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                    ctx.restore();
+                });
+
+                if (frame < maxFrames) {
+                    requestAnimationFrame(animate);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            animate();
+        }
+
+        // Remove flash
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                el.style.transition = '0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 4000);
+    </script>
+
+</body>
+</html>

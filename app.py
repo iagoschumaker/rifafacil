@@ -4,6 +4,7 @@
 # ============================================
 
 import os
+import random
 import sqlite3
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
@@ -283,6 +284,90 @@ def excluir_compra(rifa_id, compra_id):
 
     conn.close()
     return redirect(url_for('compradores', rifa_id=rifa_id))
+
+
+# =============================
+#  ROTAS - SORTEIO
+# =============================
+
+@app.route('/rifa/<int:rifa_id>/sorteio')
+def sorteio(rifa_id):
+    """Página do sorteador de números."""
+    conn = get_db()
+    rifa = conn.execute('SELECT * FROM rifas WHERE id = ?', (rifa_id,)).fetchone()
+    if not rifa:
+        flash('Rifa não encontrada.', 'erro')
+        conn.close()
+        return redirect(url_for('index'))
+
+    # Conta vendidos
+    vendidos_count = conn.execute(
+        'SELECT COUNT(*) as total FROM compras WHERE rifa_id = ?', (rifa_id,)
+    ).fetchone()['total']
+    conn.close()
+
+    return render_template('sorteio.html', rifa=rifa, vendidos_count=vendidos_count)
+
+
+@app.route('/rifa/<int:rifa_id>/sortear', methods=['POST'])
+def sortear(rifa_id):
+    """API para sortear números. Retorna JSON."""
+    conn = get_db()
+    rifa = conn.execute('SELECT * FROM rifas WHERE id = ?', (rifa_id,)).fetchone()
+    if not rifa:
+        conn.close()
+        return jsonify({'erro': 'Rifa não encontrada.'}), 404
+
+    data = request.get_json()
+    quantidade = data.get('quantidade', 1)
+    fonte = data.get('fonte', 'todos')  # 'todos' ou 'vendidos'
+    num_min = data.get('num_min', 1)
+    num_max = data.get('num_max', rifa['quantidade_numeros'])
+
+    # Validações
+    if quantidade < 1 or quantidade > 100:
+        conn.close()
+        return jsonify({'erro': 'Quantidade deve ser entre 1 e 100.'}), 400
+
+    if num_min < 1:
+        num_min = 1
+    if num_max > rifa['quantidade_numeros']:
+        num_max = rifa['quantidade_numeros']
+    if num_min > num_max:
+        conn.close()
+        return jsonify({'erro': 'Intervalo inválido.'}), 400
+
+    if fonte == 'vendidos':
+        # Sorteia apenas entre números vendidos dentro do intervalo
+        rows = conn.execute(
+            'SELECT numero, nome, telefone FROM compras WHERE rifa_id = ? AND numero >= ? AND numero <= ? ORDER BY numero',
+            (rifa_id, num_min, num_max)
+        ).fetchall()
+        pool = [{'numero': r['numero'], 'nome': r['nome'], 'telefone': r['telefone'] or ''} for r in rows]
+    else:
+        # Sorteia entre todos os números no intervalo
+        vendidos = conn.execute(
+            'SELECT numero, nome, telefone FROM compras WHERE rifa_id = ? AND numero >= ? AND numero <= ?',
+            (rifa_id, num_min, num_max)
+        ).fetchall()
+        mapa = {r['numero']: {'nome': r['nome'], 'telefone': r['telefone'] or ''} for r in vendidos}
+        pool = []
+        for n in range(num_min, num_max + 1):
+            if n in mapa:
+                pool.append({'numero': n, 'nome': mapa[n]['nome'], 'telefone': mapa[n]['telefone']})
+            else:
+                pool.append({'numero': n, 'nome': '', 'telefone': ''})
+
+    conn.close()
+
+    if len(pool) == 0:
+        return jsonify({'erro': 'Nenhum número disponível para sorteio neste intervalo.'}), 400
+
+    if quantidade > len(pool):
+        quantidade = len(pool)
+
+    sorteados = random.sample(pool, quantidade)
+    return jsonify({'sorteados': sorteados, 'total_pool': len(pool)})
 
 
 # --- Inicialização ---

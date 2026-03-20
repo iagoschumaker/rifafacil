@@ -766,3 +766,311 @@ body {
         gap: 0.75rem;
     }
 }
+
+/* --- Botão Gerar Imagem --- */
+.btn-imagem {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--raio-sm);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transicao);
+    font-family: inherit;
+}
+
+.btn-imagem:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+}
+
+.btn-imagem:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- Botão WhatsApp --- */
+.btn-whatsapp {
+    background: rgba(37, 211, 102, 0.12);
+    color: #25D366;
+    border: 1px solid rgba(37, 211, 102, 0.3);
+    padding: 0.4rem 0.7rem;
+    border-radius: var(--raio-sm);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transicao);
+    font-family: inherit;
+}
+
+.btn-whatsapp:hover {
+    background: rgba(37, 211, 102, 0.25);
+    border-color: #25D366;
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(37, 211, 102, 0.2);
+}
+
+.acoes-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* --- Select / Dropdown --- */
+.form-select {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    color: var(--cor-texto);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: var(--transicao);
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239097b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+.form-select:focus {
+    border-color: var(--cor-primaria);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* --- Sorteio --- */
+.sorteio-info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.sorteio-form-card {
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sorteio-form-card h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    color: var(--cor-texto);
+}
+
+.btn-sortear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.85rem 1.5rem;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    border: none;
+    border-radius: var(--raio-sm);
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transicao);
+    margin-top: 1rem;
+}
+
+.btn-sortear:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+}
+
+.btn-sortear:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- Slot Machine --- */
+.sorteio-animacao {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.slot-machine {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.slot-display {
+    font-size: 5rem;
+    font-weight: 800;
+    color: #fbbf24;
+    background: var(--cor-card);
+    border: 3px solid rgba(251, 191, 36, 0.3);
+    border-radius: var(--raio);
+    padding: 1rem 2.5rem;
+    min-width: 200px;
+    text-align: center;
+    transition: all 0.1s ease;
+    text-shadow: 0 0 30px rgba(251, 191, 36, 0.3);
+}
+
+.slot-display.spinning {
+    animation: slotPulse 0.15s ease;
+}
+
+.slot-display.reveal {
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.5);
+    text-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+    animation: revealBounce 0.5s ease;
+}
+
+@keyframes slotPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+@keyframes revealBounce {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.sorteio-status {
+    color: var(--cor-texto-suave);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* --- Resultado --- */
+.sorteio-resultado {
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 1.5rem;
+}
+
+.sorteio-resultado h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    text-align: center;
+    color: #fbbf24;
+}
+
+.resultado-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.resultado-card {
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: slideInResult 0.4s ease forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+@keyframes slideInResult {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.resultado-posicao {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 999px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.resultado-numero {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--cor-primaria);
+    flex-shrink: 0;
+    min-width: 60px;
+    text-align: center;
+}
+
+.resultado-comprador {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: var(--cor-texto);
+    font-weight: 500;
+}
+
+.resultado-telefone {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--cor-texto-suave);
+    margin-top: 0.25rem;
+}
+
+.resultado-icon {
+    font-size: 0.9rem;
+}
+
+.resultado-disponivel {
+    font-size: 0.9rem;
+    color: var(--cor-disponivel);
+    font-weight: 500;
+    font-style: italic;
+}
+
+/* --- Responsivo (Sorteio) --- */
+@media (max-width: 600px) {
+    .slot-display {
+        font-size: 3.5rem;
+        padding: 0.75rem 1.5rem;
+        min-width: 150px;
+    }
+
+    .resultado-card {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .resultado-numero {
+        font-size: 1.4rem;
+    }
+
+    .acoes-cell {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+}
+

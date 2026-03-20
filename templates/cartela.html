@@ -24,6 +24,7 @@
         <a href="{{ url_for('index') }}">← Voltar</a>
         <a href="{{ url_for('cartela', rifa_id=rifa.id) }}" class="ativo">Cartela</a>
         <a href="{{ url_for('compradores', rifa_id=rifa.id) }}">Compradores</a>
+        <a href="{{ url_for('sorteio', rifa_id=rifa.id) }}">Sorteio</a>
     </nav>
 
     <div class="container">
@@ -75,6 +76,13 @@
                 <span class="legenda-cor selecionado-cor"></span>
                 Selecionado
             </div>
+        </div>
+
+        <!-- Botão Gerar Imagem -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+            <button class="btn btn-imagem" onclick="gerarImagemCartela()" id="btnGerarImagem">
+                📷 Gerar Imagem
+            </button>
         </div>
 
         <!-- Grade de Números -->
@@ -142,8 +150,202 @@
 
     <script>
         const totalNumeros = {{ rifa.quantidade_numeros }};
+        const rifaNome = {{ rifa.nome | tojson }};
         const pad = totalNumeros > 99 ? 3 : 2;
         let selecionados = new Set();
+
+        // Dados dos números para geração de imagem
+        const mapaVendidos = {
+            {% for num, info in mapa_vendidos.items() %}
+            {{ num }}: { nome: {{ info.nome | tojson }}, telefone: {{ (info.telefone or 'Não informado') | tojson }} },
+            {% endfor %}
+        };
+
+        /**
+         * Gera uma imagem PNG da cartela usando Canvas API
+         */
+        function gerarImagemCartela() {
+            const btn = document.getElementById('btnGerarImagem');
+            btn.textContent = '⏳ Gerando...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                try {
+                    const cols = 10;
+                    const rows = Math.ceil(totalNumeros / cols);
+                    const cellSize = 52;
+                    const cellGap = 4;
+                    const padding = 32;
+                    const headerH = 100;
+                    const statsH = 60;
+                    const legendH = 40;
+                    const gridW = cols * (cellSize + cellGap) - cellGap;
+                    const gridH = rows * (cellSize + cellGap) - cellGap;
+
+                    const canvasW = gridW + padding * 2;
+                    const canvasH = headerH + statsH + legendH + gridH + padding * 2 + 20;
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = canvasW;
+                    canvas.height = canvasH;
+                    const ctx = canvas.getContext('2d');
+
+                    // Fundo
+                    ctx.fillStyle = '#0f1117';
+                    ctx.fillRect(0, 0, canvasW, canvasH);
+
+                    // Header gradient
+                    const headerGrad = ctx.createLinearGradient(0, 0, canvasW, headerH);
+                    headerGrad.addColorStop(0, '#1e1b4b');
+                    headerGrad.addColorStop(0.5, '#312e81');
+                    headerGrad.addColorStop(1, '#1e1b4b');
+                    ctx.fillStyle = headerGrad;
+                    ctx.fillRect(0, 0, canvasW, headerH);
+
+                    // Título
+                    ctx.fillStyle = '#e0e7ff';
+                    ctx.font = 'bold 22px Inter, Arial, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🎟️ ' + rifaNome, canvasW / 2, 45);
+
+                    // Subtítulo
+                    ctx.fillStyle = '#9097b0';
+                    ctx.font = '13px Inter, Arial, sans-serif';
+                    ctx.fillText('Cartela de Números', canvasW / 2, 70);
+
+                    // Linha divisória
+                    ctx.strokeStyle = '#2e3348';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(0, headerH);
+                    ctx.lineTo(canvasW, headerH);
+                    ctx.stroke();
+
+                    // Stats
+                    const vendidosCount = Object.keys(mapaVendidos).length;
+                    const disponiveisCount = totalNumeros - vendidosCount;
+                    const statsY = headerH + 35;
+
+                    ctx.textAlign = 'center';
+                    ctx.font = 'bold 18px Inter, Arial, sans-serif';
+
+                    // Disponíveis
+                    ctx.fillStyle = '#10b981';
+                    ctx.fillText(String(disponiveisCount), canvasW / 4, statsY);
+                    ctx.fillStyle = '#9097b0';
+                    ctx.font = '10px Inter, Arial, sans-serif';
+                    ctx.fillText('DISPONÍVEIS', canvasW / 4, statsY + 16);
+
+                    // Vendidos
+                    ctx.font = 'bold 18px Inter, Arial, sans-serif';
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillText(String(vendidosCount), canvasW / 2, statsY);
+                    ctx.fillStyle = '#9097b0';
+                    ctx.font = '10px Inter, Arial, sans-serif';
+                    ctx.fillText('VENDIDOS', canvasW / 2, statsY + 16);
+
+                    // Total
+                    ctx.font = 'bold 18px Inter, Arial, sans-serif';
+                    ctx.fillStyle = '#6366f1';
+                    ctx.fillText(String(totalNumeros), (canvasW * 3) / 4, statsY);
+                    ctx.fillStyle = '#9097b0';
+                    ctx.font = '10px Inter, Arial, sans-serif';
+                    ctx.fillText('TOTAL', (canvasW * 3) / 4, statsY + 16);
+
+                    // Legenda
+                    const legendY = headerH + statsH + 15;
+                    const legendItems = [
+                        { color: '#10b981', label: 'Disponível' },
+                        { color: '#ef4444', label: 'Vendido' }
+                    ];
+                    const legendSpacing = 120;
+                    const legendStart = canvasW / 2 - (legendItems.length * legendSpacing) / 2;
+
+                    legendItems.forEach((item, i) => {
+                        const x = legendStart + i * legendSpacing + 20;
+                        // Quadrado de cor
+                        ctx.fillStyle = item.color;
+                        ctx.beginPath();
+                        ctx.roundRect(x, legendY - 5, 12, 12, 3);
+                        ctx.fill();
+                        // Label
+                        ctx.fillStyle = '#9097b0';
+                        ctx.font = '12px Inter, Arial, sans-serif';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(item.label, x + 18, legendY + 6);
+                    });
+
+                    // Grid de números
+                    const gridStartX = padding;
+                    const gridStartY = headerH + statsH + legendH + 10;
+
+                    for (let i = 1; i <= totalNumeros; i++) {
+                        const col = (i - 1) % cols;
+                        const row = Math.floor((i - 1) / cols);
+                        const x = gridStartX + col * (cellSize + cellGap);
+                        const y = gridStartY + row * (cellSize + cellGap);
+
+                        const isVendido = i in mapaVendidos;
+
+                        // Fundo da célula
+                        if (isVendido) {
+                            ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+                        } else {
+                            ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+                        }
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, cellSize, cellSize, 6);
+                        ctx.fill();
+
+                        // Borda
+                        if (isVendido) {
+                            ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                        } else {
+                            ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+                        }
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, cellSize, cellSize, 6);
+                        ctx.stroke();
+
+                        // Número
+                        ctx.fillStyle = isVendido ? '#ef4444' : '#10b981';
+                        ctx.font = 'bold 16px Inter, Arial, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(String(i).padStart(pad, '0'), x + cellSize / 2, y + cellSize / 2);
+                    }
+
+                    ctx.textBaseline = 'alphabetic';
+
+                    // Marca d'água
+                    ctx.fillStyle = 'rgba(144, 151, 176, 0.3)';
+                    ctx.font = '10px Inter, Arial, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('RifaFácil • schumaker.com.br', canvasW / 2, canvasH - 10);
+
+                    // Download
+                    canvas.toBlob(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'cartela-' + rifaNome.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() + '.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        btn.textContent = '📷 Gerar Imagem';
+                        btn.disabled = false;
+                    }, 'image/png');
+                } catch (err) {
+                    console.error('Erro ao gerar imagem:', err);
+                    alert('Erro ao gerar a imagem. Tente novamente.');
+                    btn.textContent = '📷 Gerar Imagem';
+                    btn.disabled = false;
+                }
+            }, 100);
+        }
 
         /**
          * Ao clicar em um número:

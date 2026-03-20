@@ -20,6 +20,7 @@
         <a href="{{ url_for('index') }}">← Voltar</a>
         <a href="{{ url_for('cartela', rifa_id=rifa.id) }}">Cartela</a>
         <a href="{{ url_for('compradores', rifa_id=rifa.id) }}" class="ativo">Compradores</a>
+        <a href="{{ url_for('sorteio', rifa_id=rifa.id) }}">Sorteio</a>
     </nav>
 
     <div class="container">
@@ -53,10 +54,19 @@
                         <td>{{ c.telefone or '—' }}</td>
                         <td>{{ c.data_compra }}</td>
                         <td style="text-align: center;">
-                            <form action="{{ url_for('excluir_compra', rifa_id=rifa.id, compra_id=c.id) }}" method="POST"
-                                  onsubmit="return confirm('Excluir o número {{ '%02d' % c.numero }} ({{ c.nome }})?')">
-                                <button type="submit" class="btn btn-excluir">Excluir</button>
-                            </form>
+                            <div class="acoes-cell">
+                                {% if c.telefone %}
+                                <button type="button" class="btn btn-whatsapp"
+                                        onclick="abrirWhatsApp('{{ c.telefone }}', '{{ c.nome }}', '{{ rifa.nome }}', {{ c.numero }})"
+                                        title="Enviar WhatsApp">
+                                    📱
+                                </button>
+                                {% endif %}
+                                <form action="{{ url_for('excluir_compra', rifa_id=rifa.id, compra_id=c.id) }}" method="POST"
+                                      onsubmit="return confirm('Excluir o número {{ '%02d' % c.numero }} ({{ c.nome }})?')" style="display:inline;">
+                                    <button type="submit" class="btn btn-excluir">Excluir</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -73,6 +83,19 @@
     </div>
 
     <script>
+        function abrirWhatsApp(telefone, nome, rifaNome, numero) {
+            // Limpa o telefone: remove tudo que não é dígito
+            let tel = telefone.replace(/\D/g, '');
+            // Se não começar com 55 (Brasil), adiciona
+            if (!tel.startsWith('55')) {
+                tel = '55' + tel;
+            }
+            const msg = encodeURIComponent(
+                `Olá ${nome}! Sobre a rifa "${rifaNome}", número ${String(numero).padStart(2, '0')}. `
+            );
+            window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
+        }
+
         setTimeout(() => {
             document.querySelectorAll('.flash').forEach(el => {
                 el.style.opacity = '0';
