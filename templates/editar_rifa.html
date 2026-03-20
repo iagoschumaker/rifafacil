@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar - {{ rifa.nome }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="header">
+        <h1>✏️ Editar Rifa</h1>
+        <p>{{ rifa.nome }}</p>
+    </div>
+
+    <nav class="nav">
+        <a href="{{ url_for('index') }}">← Voltar</a>
+        <a href="{{ url_for('cartela', rifa_id=rifa.id) }}">Cartela</a>
+        <a href="{{ url_for('compradores', rifa_id=rifa.id) }}">Compradores</a>
+    </nav>
+
+    <div class="container" style="max-width: 550px;">
+
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+            {% for categoria, mensagem in mensagens %}
+            <div class="flash {{ categoria }}">{{ mensagem }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="login-card">
+            <form method="POST" action="{{ url_for('editar_rifa', rifa_id=rifa.id) }}">
+                <div class="form-grupo">
+                    <label for="inputNome">Nome da rifa *</label>
+                    <input type="text" id="inputNome" name="nome" value="{{ rifa.nome }}" required>
+                </div>
+                <div class="form-grupo">
+                    <label for="inputDescricao">Descrição</label>
+                    <input type="text" id="inputDescricao" name="descricao" value="{{ rifa.descricao or '' }}">
+                </div>
+                <div class="form-grupo">
+                    <label>Quantidade de números</label>
+                    <input type="number" value="{{ rifa.quantidade_numeros }}" disabled style="opacity: 0.5;">
+                    <small style="color: var(--cor-texto-suave); font-size: 0.75rem;">Não pode ser alterada (já existem compras)</small>
+                </div>
+                <div class="form-grupo">
+                    <label for="inputValor">Valor por número (R$)</label>
+                    <input type="number" id="inputValor" name="valor_numero" min="0" step="0.01" value="{{ rifa.valor_numero }}">
+                </div>
+                <div class="form-grupo">
+                    <label for="inputPix">Chave PIX</label>
+                    <input type="text" id="inputPix" name="chave_pix" value="{{ rifa.chave_pix or '' }}" placeholder="Ex: email@exemplo.com ou CPF">
+                </div>
+                <div class="form-grupo">
+                    <label for="inputWhatsapp">WhatsApp do gerente</label>
+                    <input type="text" id="inputWhatsapp" name="whatsapp_gerente" value="{{ rifa.whatsapp_gerente or '' }}" placeholder="Ex: (11) 99999-9999">
+                </div>
+                <div class="form-acoes">
+                    <a href="{{ url_for('index') }}" class="btn btn-cancelar">Cancelar</a>
+                    <button type="submit" class="btn btn-salvar">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                el.style.transition = '0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 4000);
+    </script>
+
+</body>
+</html>

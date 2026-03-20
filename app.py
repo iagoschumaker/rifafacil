@@ -378,6 +378,46 @@ def excluir_rifa(rifa_id):
     return redirect(url_for('index'))
 
 
+@app.route('/editar-rifa/<int:rifa_id>', methods=['GET'])
+@login_required
+def editar_rifa_page(rifa_id):
+    """Página de edição de rifa."""
+    conn = get_db()
+    rifa = conn.execute('SELECT * FROM rifas WHERE id = ?', (rifa_id,)).fetchone()
+    if not rifa:
+        flash('Rifa não encontrada.', 'erro')
+        conn.close()
+        return redirect(url_for('index'))
+    conn.close()
+    return render_template('editar_rifa.html', rifa=rifa)
+
+
+@app.route('/editar-rifa/<int:rifa_id>', methods=['POST'])
+@login_required
+def editar_rifa(rifa_id):
+    """Salva as alterações de uma rifa."""
+    nome = request.form.get('nome', '').strip()
+    descricao = request.form.get('descricao', '').strip()
+    valor = request.form.get('valor_numero', type=float) or 0
+    chave_pix = request.form.get('chave_pix', '').strip()
+    whatsapp_gerente = request.form.get('whatsapp_gerente', '').strip()
+
+    if not nome:
+        flash('O nome da rifa é obrigatório!', 'erro')
+        return redirect(url_for('editar_rifa_page', rifa_id=rifa_id))
+
+    conn = get_db()
+    conn.execute(
+        'UPDATE rifas SET nome = ?, descricao = ?, valor_numero = ?, chave_pix = ?, whatsapp_gerente = ? WHERE id = ?',
+        (nome, descricao, valor, chave_pix, whatsapp_gerente, rifa_id)
+    )
+    conn.commit()
+    conn.close()
+
+    flash(f'Rifa "{nome}" atualizada com sucesso!', 'sucesso')
+    return redirect(url_for('index'))
+
+
 # =============================
 #  ROTAS - CARTELA DA RIFA
 # =============================
@@ -512,6 +552,29 @@ def excluir_compra(rifa_id, compra_id):
         flash('Registro não encontrado.', 'erro')
 
     conn.close()
+    return redirect(url_for('compradores', rifa_id=rifa_id))
+
+
+@app.route('/rifa/<int:rifa_id>/editar-compra/<int:compra_id>', methods=['POST'])
+@login_required
+def editar_compra(rifa_id, compra_id):
+    """Edita os dados de uma compra (nome e telefone)."""
+    nome = request.form.get('nome', '').strip()
+    telefone = request.form.get('telefone', '').strip()
+
+    if not nome:
+        flash('O nome é obrigatório!', 'erro')
+        return redirect(url_for('compradores', rifa_id=rifa_id))
+
+    conn = get_db()
+    conn.execute(
+        'UPDATE compras SET nome = ?, telefone = ? WHERE id = ? AND rifa_id = ?',
+        (nome, telefone, compra_id, rifa_id)
+    )
+    conn.commit()
+    conn.close()
+
+    flash(f'Dados do comprador atualizados!', 'sucesso')
     return redirect(url_for('compradores', rifa_id=rifa_id))
 
 

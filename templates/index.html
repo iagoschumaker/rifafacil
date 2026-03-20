@@ -104,6 +104,7 @@
                 <div class="rifa-card-footer">
                     <a href="{{ url_for('cartela', rifa_id=rifa.id) }}" class="btn btn-salvar" style="flex: 1;">Abrir Cartela</a>
                     {% if current_user %}
+                    <a href="{{ url_for('editar_rifa_page', rifa_id=rifa.id) }}" class="btn btn-imagem">✏️</a>
                     <form action="{{ url_for('excluir_rifa', rifa_id=rifa.id) }}" method="POST" style="margin:0;"
                           onsubmit="return confirm('Excluir a rifa &quot;{{ rifa.nome }}&quot; e todas as suas compras?')">
                         <button type="submit" class="btn btn-excluir">Excluir</button>
