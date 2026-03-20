@@ -1342,3 +1342,211 @@ body {
     color: var(--cor-texto-suave);
     font-style: italic;
 }
+
+/* --- Barra de Seleção Flutuante --- */
+.barra-selecao {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: calc(100% - 2rem);
+    max-width: 600px;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    transition: bottom 0.3s ease;
+}
+
+.barra-selecao.visivel {
+    bottom: 1rem;
+}
+
+.barra-selecao span {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--cor-texto);
+    white-space: nowrap;
+}
+
+.barra-btns {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* --- Número Selecionado --- */
+.numero-cell.selecionado {
+    background: rgba(99, 102, 241, 0.2) !important;
+    border-color: rgba(99, 102, 241, 0.5) !important;
+    color: #a5b4fc !important;
+    transform: scale(1.05);
+}
+
+.selecionado-cor {
+    background: var(--cor-primaria);
+}
+
+/* --- Info Valor --- */
+.info-valor {
+    text-align: center;
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--cor-texto-suave);
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+}
+
+/* --- Modal Info Vendido --- */
+.info-vendido {
+    text-align: center;
+}
+
+.numero-grande {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--cor-vendido);
+    margin-bottom: 1rem;
+}
+
+.info-vendido .detalhe {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+}
+
+/* --- Num Tags (preview selecionados) --- */
+.numeros-selecionados {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.num-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--cor-primaria);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--raio-sm);
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* --- Rifa Card Footer --- */
+.rifa-card-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.rifa-card-footer .btn {
+    flex: 0 1 auto;
+}
+
+.rifa-card-footer .btn-salvar {
+    flex: 1 1 auto;
+}
+
+/* --- Rifa Valor --- */
+.rifa-valor {
+    font-size: 0.85rem;
+    color: var(--cor-disponivel);
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+/* --- Rifas Grid Desktop --- */
+.rifas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+}
+
+.rifa-desc {
+    font-size: 0.85rem;
+    color: var(--cor-texto-suave);
+    margin-top: 0.25rem;
+}
+
+.rifa-data {
+    font-size: 0.75rem;
+    color: var(--cor-texto-suave);
+    margin-top: 0.5rem;
+    text-align: right;
+}
+
+/* --- Num Col --- */
+.num-col {
+    font-weight: 700;
+    color: var(--cor-primaria);
+    text-align: center;
+}
+
+/* --- Rifa Card Stats --- */
+.rifa-card-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem;
+    margin-top: 0.75rem;
+}
+
+.rifa-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.rifa-stat-num {
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.rifa-stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--cor-texto-suave);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.total-cor { color: var(--cor-primaria); }
+.disponivel-cor { color: var(--cor-disponivel); }
+.vendido-cor { color: var(--cor-vendido); }
+
+/* --- Responsive fixes --- */
+@media (max-width: 600px) {
+    .barra-selecao {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+    }
+
+    .barra-btns {
+        width: 100%;
+    }
+
+    .barra-btns .btn {
+        flex: 1;
+    }
+
+    .rifas-grid {
+        grid-template-columns: 1fr;
+    }
+}

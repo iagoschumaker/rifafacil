@@ -23,9 +23,9 @@
     <nav class="nav">
         <a href="{{ url_for('index') }}">← Voltar</a>
         <a href="{{ url_for('cartela', rifa_id=rifa.id) }}" class="ativo">Cartela</a>
+        {% if current_user %}
         <a href="{{ url_for('compradores', rifa_id=rifa.id) }}">Compradores</a>
         <a href="{{ url_for('sorteio', rifa_id=rifa.id) }}">Sorteio</a>
-        {% if current_user %}
         <span style="color: var(--cor-texto-suave); font-size: 0.8rem;">👤 {{ current_user.nome }}</span>
         {% endif %}
     </nav>
@@ -95,8 +95,11 @@
             <div class="numero-cell {% if i in mapa_vendidos %}vendido{% else %}disponivel{% endif %}"
                  data-numero="{{ i }}"
                  {% if i in mapa_vendidos %}
+                 data-vendido="1"
+                 {% if current_user %}
                  data-nome="{{ mapa_vendidos[i].nome }}"
                  data-telefone="{{ mapa_vendidos[i].telefone or 'Não informado' }}"
+                 {% endif %}
                  {% endif %}
                  onclick="clicarNumero(this)">
                 {{ '%02d' % i if rifa.quantidade_numeros <= 99 else '%03d' % i }}
@@ -104,12 +107,15 @@
             {% endfor %}
         </div>
 
+        <!-- Spacer para barra flutuante não cobrir números -->
+        <div style="height: 80px;"></div>
+
     </div>
 
     <!-- Barra flutuante de seleção -->
     <div class="barra-selecao" id="barraSelecao">
         <span id="barraTexto">0 números selecionados</span>
-        <div style="display: flex; gap: 0.5rem;">
+        <div class="barra-btns">
             <button class="btn btn-cancelar" onclick="limparSelecao()">Limpar</button>
             {% if current_user %}
             <button class="btn btn-salvar" onclick="abrirFormulario()">Registrar</button>
@@ -165,7 +171,7 @@
                     </div>
                     <div class="pix-qr-container">
                         <canvas id="pixQrCode" width="200" height="200"></canvas>
-                        <p style="font-size: 0.75rem; color: var(--cor-texto-suave); margin-top: 0.5rem;">Escaneie para copiar a chave</p>
+                        <p style="font-size: 0.75rem; color: var(--cor-texto-suave); margin-top: 0.5rem;">Copie a chave acima para pagamento</p>
                     </div>
                 </div>
                 {% endif %}
@@ -180,7 +186,8 @@
         </div>
     </div>
 
-    <!-- Modal de Info (número vendido) -->
+    <!-- Modal de Info (número vendido) - SÓ ADMIN -->
+    {% if current_user %}
     <div class="overlay" id="modalInfo">
         <div class="modal">
             <div class="info-vendido">
@@ -193,6 +200,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <script>
         const totalNumeros = {{ rifa.quantidade_numeros }};
@@ -204,23 +212,23 @@
         const pad = totalNumeros > 99 ? 3 : 2;
         let selecionados = new Set();
 
-        const mapaVendidos = {
-            {% for num, info in mapa_vendidos.items() %}
-            {{ num }}: { nome: {{ info.nome | tojson }}, telefone: {{ (info.telefone or 'Não informado') | tojson }} },
-            {% endfor %}
-        };
-
         function clicarNumero(el) {
             const numero = parseInt(el.dataset.numero);
 
+            // Número vendido
             if (el.classList.contains('vendido')) {
-                document.getElementById('infoNumero').textContent = String(numero).padStart(pad, '0');
-                document.getElementById('infoNome').textContent = el.dataset.nome;
-                document.getElementById('infoTelefone').textContent = el.dataset.telefone;
-                document.getElementById('modalInfo').classList.add('ativo');
+                if (isAdmin && el.dataset.nome) {
+                    // Admin: mostra info do comprador
+                    document.getElementById('infoNumero').textContent = String(numero).padStart(pad, '0');
+                    document.getElementById('infoNome').textContent = el.dataset.nome;
+                    document.getElementById('infoTelefone').textContent = el.dataset.telefone;
+                    document.getElementById('modalInfo').classList.add('ativo');
+                }
+                // Público: não faz nada em número vendido
                 return;
             }
 
+            // Número disponível: toggle seleção
             if (selecionados.has(numero)) {
                 selecionados.delete(numero);
                 el.classList.remove('selecionado');
@@ -246,12 +254,13 @@
                     : qtd + ' números selecionados';
             } else {
                 barra.classList.remove('visivel');
+                texto.textContent = '0 números selecionados';
             }
         }
 
         function limparSelecao() {
             selecionados.clear();
-            document.querySelectorAll('.numero-cell.selecionado').forEach(el => {
+            document.querySelectorAll('.numero-cell.selecionado').forEach(function(el) {
                 el.classList.remove('selecionado');
                 el.classList.add('disponivel');
             });
@@ -261,35 +270,32 @@
         // ======== ADMIN: Registrar compra ========
         function abrirFormulario() {
             if (selecionados.size === 0) return;
-            const lista = Array.from(selecionados).sort((a, b) => a - b);
+            const lista = Array.from(selecionados).sort(function(a, b) { return a - b; });
             document.getElementById('inputNumeros').value = lista.join(',');
             const preview = document.getElementById('numerosPreview');
-            preview.innerHTML = lista.map(n =>
-                '<span class="num-tag">' + String(n).padStart(pad, '0') + '</span>'
-            ).join('');
+            preview.innerHTML = lista.map(function(n) {
+                return '<span class="num-tag">' + String(n).padStart(pad, '0') + '</span>';
+            }).join('');
             document.getElementById('inputNome').value = '';
             document.getElementById('inputTelefone').value = '';
             document.getElementById('modalCompra').classList.add('ativo');
-            setTimeout(() => document.getElementById('inputNome').focus(), 200);
+            setTimeout(function() { document.getElementById('inputNome').focus(); }, 200);
         }
 
         // ======== PÚBLICO: PIX + WhatsApp ========
         function abrirModalPublico() {
             if (selecionados.size === 0) return;
-            const lista = Array.from(selecionados).sort((a, b) => a - b);
+            var lista = Array.from(selecionados).sort(function(a, b) { return a - b; });
 
-            // Preview dos números
-            const preview = document.getElementById('publicNumerosPreview');
-            preview.innerHTML = lista.map(n =>
-                '<span class="num-tag">' + String(n).padStart(pad, '0') + '</span>'
-            ).join('');
+            var preview = document.getElementById('publicNumerosPreview');
+            preview.innerHTML = lista.map(function(n) {
+                return '<span class="num-tag">' + String(n).padStart(pad, '0') + '</span>';
+            }).join('');
 
-            // Valor total
-            const total = lista.length * valorNumero;
+            var total = lista.length * valorNumero;
             document.getElementById('publicValorTotal').textContent =
                 'R$ ' + total.toFixed(2).replace('.', ',');
 
-            // Gera QR Code simples da chave PIX
             if (chavePix) {
                 gerarQrCodeSimples(chavePix);
             }
@@ -298,89 +304,81 @@
         }
 
         function copiarPix() {
-            navigator.clipboard.writeText(chavePix).then(() => {
-                const btn = event.target;
+            navigator.clipboard.writeText(chavePix).then(function() {
+                var btn = event.target;
                 btn.textContent = '✅ Copiado!';
-                setTimeout(() => btn.textContent = 'Copiar', 2000);
+                setTimeout(function() { btn.textContent = 'Copiar'; }, 2000);
             });
         }
 
         function copiarLink() {
-            navigator.clipboard.writeText(window.location.href).then(() => {
+            navigator.clipboard.writeText(window.location.href).then(function() {
                 alert('Link copiado!');
             });
         }
 
         function enviarWhatsAppGerente() {
-            const lista = Array.from(selecionados).sort((a, b) => a - b);
-            const numerosStr = lista.map(n => String(n).padStart(pad, '0')).join(', ');
-            const total = lista.length * valorNumero;
-            const totalStr = 'R$ ' + total.toFixed(2).replace('.', ',');
+            var lista = Array.from(selecionados).sort(function(a, b) { return a - b; });
+            var numerosStr = lista.map(function(n) { return String(n).padStart(pad, '0'); }).join(', ');
+            var total = lista.length * valorNumero;
+            var totalStr = 'R$ ' + total.toFixed(2).replace('.', ',');
 
-            let tel = whatsappGerente.replace(/\D/g, '');
-            if (!tel.startsWith('55')) tel = '55' + tel;
+            var tel = whatsappGerente.replace(/\D/g, '');
+            if (tel.substring(0, 2) !== '55') tel = '55' + tel;
 
-            const msg = encodeURIComponent(
-                `Olá! Quero comprar ${lista.length} número(s) da rifa "${rifaNome}":\n\n` +
-                `📋 Números: ${numerosStr}\n` +
-                `💰 Total: ${totalStr}\n\n` +
-                `Vou efetuar o pagamento via PIX.`
+            var msg = encodeURIComponent(
+                'Olá! Quero comprar ' + lista.length + ' número(s) da rifa "' + rifaNome + '":\n\n' +
+                '📋 Números: ' + numerosStr + '\n' +
+                '💰 Total: ' + totalStr + '\n\n' +
+                'Vou efetuar o pagamento via PIX.'
             );
-            window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
+            window.open('https://wa.me/' + tel + '?text=' + msg, '_blank');
         }
 
-        // QR Code simples usando Canvas (texto básico)
         function gerarQrCodeSimples(text) {
-            const canvas = document.getElementById('pixQrCode');
+            var canvas = document.getElementById('pixQrCode');
             if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const size = 200;
+            var ctx = canvas.getContext('2d');
+            var size = 200;
             canvas.width = size;
             canvas.height = size;
 
-            // Fundo branco
             ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, size, size);
 
-            // Texto central (fallback - chave PIX)
             ctx.fillStyle = '#000';
             ctx.font = 'bold 12px Inter, Arial, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Quebra texto se muito longo
-            const maxW = size - 20;
-            const words = text.split('');
-            let line = '';
-            let lines = [];
-            for (let ch of words) {
-                const test = line + ch;
+            var maxW = size - 20;
+            var chars = text.split('');
+            var line = '';
+            var lines = [];
+            for (var i = 0; i < chars.length; i++) {
+                var test = line + chars[i];
                 if (ctx.measureText(test).width > maxW && line) {
                     lines.push(line);
-                    line = ch;
+                    line = chars[i];
                 } else {
                     line = test;
                 }
             }
             lines.push(line);
 
-            // Borda
             ctx.strokeStyle = '#ccc';
             ctx.lineWidth = 2;
             ctx.strokeRect(4, 4, size - 8, size - 8);
 
-            // Ícone PIX
             ctx.font = 'bold 28px Arial';
             ctx.fillText('PIX', size / 2, 40);
 
-            // Chave
             ctx.font = '11px Inter, Arial, sans-serif';
-            const startY = 80;
-            lines.forEach((l, i) => {
-                ctx.fillText(l, size / 2, startY + i * 16);
-            });
+            var startY = 80;
+            for (var j = 0; j < lines.length; j++) {
+                ctx.fillText(lines[j], size / 2, startY + j * 16);
+            }
 
-            // Label
             ctx.font = '10px Inter, Arial, sans-serif';
             ctx.fillStyle = '#666';
             ctx.fillText('Copie a chave acima', size / 2, size - 20);
@@ -388,34 +386,44 @@
 
         // ======== Gerar Imagem da Cartela ========
         function gerarImagemCartela() {
-            const btn = document.getElementById('btnGerarImagem');
+            var btn = document.getElementById('btnGerarImagem');
             btn.textContent = '⏳ Gerando...';
             btn.disabled = true;
 
-            setTimeout(() => {
-                try {
-                    const cols = 10;
-                    const rows = Math.ceil(totalNumeros / cols);
-                    const cellSize = 52;
-                    const cellGap = 4;
-                    const padding = 32;
-                    const headerH = 100;
-                    const statsH = 60;
-                    const legendH = 40;
-                    const gridW = cols * (cellSize + cellGap) - cellGap;
-                    const gridH = rows * (cellSize + cellGap) - cellGap;
-                    const canvasW = gridW + padding * 2;
-                    const canvasH = headerH + statsH + legendH + gridH + padding * 2 + 20;
+            {% if current_user %}
+            var mapaVendidos = {
+                {% for num, info in mapa_vendidos.items() %}
+                {{ num }}: true,
+                {% endfor %}
+            };
+            {% else %}
+            var mapaVendidos = {};
+            {% endif %}
 
-                    const canvas = document.createElement('canvas');
+            setTimeout(function() {
+                try {
+                    var cols = 10;
+                    var rows = Math.ceil(totalNumeros / cols);
+                    var cellSize = 52;
+                    var cellGap = 4;
+                    var padding = 32;
+                    var headerH = 100;
+                    var statsH = 60;
+                    var legendH = 40;
+                    var gridW = cols * (cellSize + cellGap) - cellGap;
+                    var gridH = rows * (cellSize + cellGap) - cellGap;
+                    var canvasW = gridW + padding * 2;
+                    var canvasH = headerH + statsH + legendH + gridH + padding * 2 + 20;
+
+                    var canvas = document.createElement('canvas');
                     canvas.width = canvasW;
                     canvas.height = canvasH;
-                    const ctx = canvas.getContext('2d');
+                    var ctx = canvas.getContext('2d');
 
                     ctx.fillStyle = '#0f1117';
                     ctx.fillRect(0, 0, canvasW, canvasH);
 
-                    const headerGrad = ctx.createLinearGradient(0, 0, canvasW, headerH);
+                    var headerGrad = ctx.createLinearGradient(0, 0, canvasW, headerH);
                     headerGrad.addColorStop(0, '#1e1b4b');
                     headerGrad.addColorStop(0.5, '#312e81');
                     headerGrad.addColorStop(1, '#1e1b4b');
@@ -431,66 +439,14 @@
                     ctx.font = '13px Inter, Arial, sans-serif';
                     ctx.fillText('Cartela de Números', canvasW / 2, 70);
 
-                    ctx.strokeStyle = '#2e3348';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(0, headerH);
-                    ctx.lineTo(canvasW, headerH);
-                    ctx.stroke();
-
-                    const vendidosCount = Object.keys(mapaVendidos).length;
-                    const disponiveisCount = totalNumeros - vendidosCount;
-                    const statsY = headerH + 35;
-
-                    ctx.textAlign = 'center';
-                    ctx.font = 'bold 18px Inter, Arial, sans-serif';
-                    ctx.fillStyle = '#10b981';
-                    ctx.fillText(String(disponiveisCount), canvasW / 4, statsY);
-                    ctx.fillStyle = '#9097b0';
-                    ctx.font = '10px Inter, Arial, sans-serif';
-                    ctx.fillText('DISPONÍVEIS', canvasW / 4, statsY + 16);
-
-                    ctx.font = 'bold 18px Inter, Arial, sans-serif';
-                    ctx.fillStyle = '#ef4444';
-                    ctx.fillText(String(vendidosCount), canvasW / 2, statsY);
-                    ctx.fillStyle = '#9097b0';
-                    ctx.font = '10px Inter, Arial, sans-serif';
-                    ctx.fillText('VENDIDOS', canvasW / 2, statsY + 16);
-
-                    ctx.font = 'bold 18px Inter, Arial, sans-serif';
-                    ctx.fillStyle = '#6366f1';
-                    ctx.fillText(String(totalNumeros), (canvasW * 3) / 4, statsY);
-                    ctx.fillStyle = '#9097b0';
-                    ctx.font = '10px Inter, Arial, sans-serif';
-                    ctx.fillText('TOTAL', (canvasW * 3) / 4, statsY + 16);
-
-                    const legendY = headerH + statsH + 15;
-                    const legendItems = [
-                        { color: '#10b981', label: 'Disponível' },
-                        { color: '#ef4444', label: 'Vendido' }
-                    ];
-                    const legendSpacing = 120;
-                    const legendStart = canvasW / 2 - (legendItems.length * legendSpacing) / 2;
-                    legendItems.forEach((item, i) => {
-                        const x = legendStart + i * legendSpacing + 20;
-                        ctx.fillStyle = item.color;
-                        ctx.beginPath();
-                        ctx.roundRect(x, legendY - 5, 12, 12, 3);
-                        ctx.fill();
-                        ctx.fillStyle = '#9097b0';
-                        ctx.font = '12px Inter, Arial, sans-serif';
-                        ctx.textAlign = 'left';
-                        ctx.fillText(item.label, x + 18, legendY + 6);
-                    });
-
-                    const gridStartX = padding;
-                    const gridStartY = headerH + statsH + legendH + 10;
-                    for (let i = 1; i <= totalNumeros; i++) {
-                        const col = (i - 1) % cols;
-                        const row = Math.floor((i - 1) / cols);
-                        const x = gridStartX + col * (cellSize + cellGap);
-                        const y = gridStartY + row * (cellSize + cellGap);
-                        const isVendido = i in mapaVendidos;
+                    var gridStartX = padding;
+                    var gridStartY = headerH + statsH + legendH + 10;
+                    for (var i = 1; i <= totalNumeros; i++) {
+                        var col = (i - 1) % cols;
+                        var row = Math.floor((i - 1) / cols);
+                        var x = gridStartX + col * (cellSize + cellGap);
+                        var y = gridStartY + row * (cellSize + cellGap);
+                        var isVendido = i in mapaVendidos;
 
                         ctx.fillStyle = isVendido ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
                         ctx.beginPath();
@@ -516,9 +472,9 @@
                     ctx.textAlign = 'center';
                     ctx.fillText('RifaFácil • schumaker.com.br', canvasW / 2, canvasH - 10);
 
-                    canvas.toBlob(blob => {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
+                    canvas.toBlob(function(blob) {
+                        var url = URL.createObjectURL(blob);
+                        var a = document.createElement('a');
                         a.href = url;
                         a.download = 'cartela-' + rifaNome.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() + '.png';
                         document.body.appendChild(a);
@@ -530,7 +486,6 @@
                     }, 'image/png');
                 } catch (err) {
                     console.error('Erro ao gerar imagem:', err);
-                    alert('Erro ao gerar a imagem.');
                     btn.textContent = '📷 Gerar Imagem';
                     btn.disabled = false;
                 }
@@ -538,10 +493,10 @@
         }
 
         function fecharModal() {
-            document.querySelectorAll('.overlay').forEach(o => o.classList.remove('ativo'));
+            document.querySelectorAll('.overlay').forEach(function(o) { o.classList.remove('ativo'); });
         }
 
-        document.querySelectorAll('.overlay').forEach(overlay => {
+        document.querySelectorAll('.overlay').forEach(function(overlay) {
             overlay.addEventListener('click', function(e) {
                 if (e.target === this) fecharModal();
             });
@@ -551,12 +506,12 @@
             if (e.key === 'Escape') fecharModal();
         });
 
-        setTimeout(() => {
-            document.querySelectorAll('.flash').forEach(el => {
+        setTimeout(function() {
+            document.querySelectorAll('.flash').forEach(function(el) {
                 el.style.opacity = '0';
                 el.style.transform = 'translateY(-10px)';
                 el.style.transition = '0.3s ease';
-                setTimeout(() => el.remove(), 300);
+                setTimeout(function() { el.remove(); }, 300);
             });
         }, 4000);
     </script>

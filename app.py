@@ -516,6 +516,7 @@ def comprar(rifa_id):
 # =============================
 
 @app.route('/rifa/<int:rifa_id>/compradores')
+@login_required
 def compradores(rifa_id):
     """Lista de compradores de uma rifa específica."""
     conn = get_db()
@@ -615,6 +616,7 @@ def exportar_csv(rifa_id):
 # =============================
 
 @app.route('/rifa/<int:rifa_id>/sorteio')
+@login_required
 def sorteio(rifa_id):
     """Página do sorteador de números."""
     conn = get_db()
