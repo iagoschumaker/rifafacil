@@ -15,6 +15,19 @@
         <p>Gerencie suas rifas de forma simples</p>
     </div>
 
+    <!-- Barra de Sessão -->
+    <nav class="nav">
+        {% if current_user %}
+            <span style="color: var(--cor-texto-suave); font-size: 0.85rem;">👤 {{ current_user.nome }}</span>
+            {% if current_user.role == 'superadmin' %}
+            <a href="{{ url_for('admin_usuarios') }}">👥 Admins</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}">Sair</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">🔐 Login</a>
+        {% endif %}
+    </nav>
+
     <div class="container">
 
         <!-- Mensagens Flash -->
@@ -26,12 +39,14 @@
         {% endif %}
         {% endwith %}
 
-        <!-- Botão Nova Rifa -->
+        <!-- Botão Nova Rifa (somente logado) -->
+        {% if current_user %}
         <div style="display: flex; justify-content: flex-end; margin-bottom: 1.25rem;">
             <button class="btn btn-salvar" onclick="document.getElementById('modalNovaRifa').classList.add('ativo')">
                 + Nova Rifa
             </button>
         </div>
+        {% endif %}
 
         <!-- Lista de Rifas -->
         {% if rifas %}
@@ -58,17 +73,42 @@
                         <span class="rifa-stat-label">Vendidos</span>
                     </div>
                 </div>
+
+                <!-- Dashboard financeiro -->
+                {% if current_user and rifa.valor_numero > 0 %}
+                <div class="rifa-dashboard">
+                    <div class="dash-item">
+                        <span class="dash-label">Arrecadado</span>
+                        <span class="dash-value sucesso">R$ {{ '%.2f' | format(stats[rifa.id].arrecadado) | replace('.', ',') }}</span>
+                    </div>
+                    <div class="dash-item">
+                        <span class="dash-label">Faltando</span>
+                        <span class="dash-value alerta">R$ {{ '%.2f' | format(stats[rifa.id].faltando) | replace('.', ',') }}</span>
+                    </div>
+                    <div class="dash-item">
+                        <span class="dash-label">Progresso</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ stats[rifa.id].percentual }}%"></div>
+                        </div>
+                        <span class="dash-percent">{{ stats[rifa.id].percentual }}%</span>
+                    </div>
+                </div>
+                {% endif %}
+
                 {% if rifa.valor_numero > 0 %}
                 <div class="rifa-valor">
                     R$ {{ '%.2f' | format(rifa.valor_numero) | replace('.', ',') }} por número
                 </div>
                 {% endif %}
+
                 <div class="rifa-card-footer">
                     <a href="{{ url_for('cartela', rifa_id=rifa.id) }}" class="btn btn-salvar" style="flex: 1;">Abrir Cartela</a>
+                    {% if current_user %}
                     <form action="{{ url_for('excluir_rifa', rifa_id=rifa.id) }}" method="POST" style="margin:0;"
                           onsubmit="return confirm('Excluir a rifa &quot;{{ rifa.nome }}&quot; e todas as suas compras?')">
                         <button type="submit" class="btn btn-excluir">Excluir</button>
                     </form>
+                    {% endif %}
                 </div>
                 <div class="rifa-data">Criada em {{ rifa.data_criacao }}</div>
             </div>
@@ -78,15 +118,18 @@
         <div class="vazio">
             <div class="icone">🎟️</div>
             <p>Nenhuma rifa cadastrada ainda.</p>
+            {% if current_user %}
             <p style="color: var(--cor-texto-suave); font-size: 0.9rem; margin-top: 0.5rem;">
                 Clique em <strong>"+ Nova Rifa"</strong> para começar.
             </p>
+            {% endif %}
         </div>
         {% endif %}
 
     </div>
 
     <!-- Modal Nova Rifa -->
+    {% if current_user %}
     <div class="overlay" id="modalNovaRifa">
         <div class="modal">
             <h2>Nova Rifa</h2>
@@ -109,6 +152,14 @@
                         <input type="number" id="inputValor" name="valor_numero" min="0" step="0.01" value="0" placeholder="0,00">
                     </div>
                 </div>
+                <div class="form-grupo">
+                    <label for="inputPix">Chave PIX (para pagamento)</label>
+                    <input type="text" id="inputPix" name="chave_pix" placeholder="Ex: email@exemplo.com ou CPF">
+                </div>
+                <div class="form-grupo">
+                    <label for="inputWhatsapp">WhatsApp do gerente</label>
+                    <input type="text" id="inputWhatsapp" name="whatsapp_gerente" placeholder="Ex: (11) 99999-9999">
+                </div>
                 <div class="form-acoes">
                     <button type="button" class="btn btn-cancelar" onclick="fecharModal()">Cancelar</button>
                     <button type="submit" class="btn btn-salvar">Criar Rifa</button>
@@ -116,25 +167,23 @@
             </form>
         </div>
     </div>
+    {% endif %}
 
     <script>
         function fecharModal() {
             document.getElementById('modalNovaRifa').classList.remove('ativo');
         }
 
-        // Fecha modal ao clicar fora
         document.querySelectorAll('.overlay').forEach(overlay => {
             overlay.addEventListener('click', function(e) {
                 if (e.target === this) fecharModal();
             });
         });
 
-        // Fecha modal com ESC
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') fecharModal();
         });
 
-        // Remove flash após 4s
         setTimeout(() => {
             document.querySelectorAll('.flash').forEach(el => {
                 el.style.opacity = '0';

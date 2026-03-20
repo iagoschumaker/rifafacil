@@ -9,13 +9,11 @@
 </head>
 <body>
 
-    <!-- Cabeçalho -->
     <div class="header">
         <h1>🎟️ {{ rifa.nome }}</h1>
         <p>Lista de compradores</p>
     </div>
 
-    <!-- Navegação -->
     <nav class="nav">
         <a href="{{ url_for('index') }}">← Voltar</a>
         <a href="{{ url_for('cartela', rifa_id=rifa.id) }}">Cartela</a>
@@ -25,7 +23,6 @@
 
     <div class="container">
 
-        <!-- Mensagens Flash -->
         {% with mensagens = get_flashed_messages(with_categories=true) %}
         {% if mensagens %}
             {% for categoria, mensagem in mensagens %}
@@ -35,24 +32,36 @@
         {% endwith %}
 
         {% if compradores %}
+
+        <!-- Barra de busca + Export -->
+        <div class="search-bar">
+            <input type="text" id="inputBusca" placeholder="🔍 Buscar por nome ou número..." oninput="filtrarCompradores()">
+            {% if current_user %}
+            <a href="{{ url_for('exportar_csv', rifa_id=rifa.id) }}" class="btn btn-imagem" style="white-space: nowrap;">📥 CSV</a>
+            {% endif %}
+        </div>
+
         <div class="tabela-wrapper">
-            <table class="tabela">
+            <table class="tabela" id="tabelaCompradores">
                 <thead>
                     <tr>
                         <th style="text-align: center;">Nº</th>
                         <th>Nome</th>
                         <th>Telefone</th>
                         <th>Data</th>
+                        {% if current_user %}
                         <th style="text-align: center;">Ação</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in compradores %}
-                    <tr>
+                    <tr data-nome="{{ c.nome | lower }}" data-numero="{{ c.numero }}">
                         <td class="num-col">{{ '%02d' % c.numero if rifa.quantidade_numeros <= 99 else '%03d' % c.numero }}</td>
                         <td>{{ c.nome }}</td>
                         <td>{{ c.telefone or '—' }}</td>
                         <td>{{ c.data_compra }}</td>
+                        {% if current_user %}
                         <td style="text-align: center;">
                             <div class="acoes-cell">
                                 {% if c.telefone %}
@@ -68,11 +77,17 @@
                                 </form>
                             </div>
                         </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        <div class="busca-vazio" id="buscaVazio" style="display: none;">
+            <p>Nenhum resultado encontrado.</p>
+        </div>
+
         {% else %}
         <div class="vazio">
             <div class="icone">📋</div>
@@ -84,16 +99,31 @@
 
     <script>
         function abrirWhatsApp(telefone, nome, rifaNome, numero) {
-            // Limpa o telefone: remove tudo que não é dígito
             let tel = telefone.replace(/\D/g, '');
-            // Se não começar com 55 (Brasil), adiciona
-            if (!tel.startsWith('55')) {
-                tel = '55' + tel;
-            }
+            if (!tel.startsWith('55')) tel = '55' + tel;
             const msg = encodeURIComponent(
                 `Olá ${nome}! Sobre a rifa "${rifaNome}", número ${String(numero).padStart(2, '0')}. `
             );
             window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
+        }
+
+        function filtrarCompradores() {
+            const busca = document.getElementById('inputBusca').value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#tabelaCompradores tbody tr');
+            let visivel = 0;
+
+            rows.forEach(row => {
+                const nome = row.dataset.nome || '';
+                const numero = row.dataset.numero || '';
+                if (!busca || nome.includes(busca) || numero.includes(busca)) {
+                    row.style.display = '';
+                    visivel++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('buscaVazio').style.display = visivel === 0 ? 'block' : 'none';
         }
 
         setTimeout(() => {

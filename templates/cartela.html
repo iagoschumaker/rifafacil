@@ -25,6 +25,9 @@
         <a href="{{ url_for('cartela', rifa_id=rifa.id) }}" class="ativo">Cartela</a>
         <a href="{{ url_for('compradores', rifa_id=rifa.id) }}">Compradores</a>
         <a href="{{ url_for('sorteio', rifa_id=rifa.id) }}">Sorteio</a>
+        {% if current_user %}
+        <span style="color: var(--cor-texto-suave); font-size: 0.8rem;">👤 {{ current_user.nome }}</span>
+        {% endif %}
     </nav>
 
     <div class="container">
@@ -78,12 +81,13 @@
             </div>
         </div>
 
-        <!-- Botão Gerar Imagem -->
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
-            <button class="btn btn-imagem" onclick="gerarImagemCartela()" id="btnGerarImagem">
-                📷 Gerar Imagem
-            </button>
+        <!-- Ações Admin -->
+        {% if current_user %}
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 1rem;">
+            <button class="btn btn-imagem" onclick="gerarImagemCartela()" id="btnGerarImagem">📷 Gerar Imagem</button>
+            <button class="btn btn-imagem" onclick="copiarLink()">🔗 Copiar Link</button>
         </div>
+        {% endif %}
 
         <!-- Grade de Números -->
         <div class="grade" id="gradeNumeros">
@@ -107,11 +111,16 @@
         <span id="barraTexto">0 números selecionados</span>
         <div style="display: flex; gap: 0.5rem;">
             <button class="btn btn-cancelar" onclick="limparSelecao()">Limpar</button>
+            {% if current_user %}
             <button class="btn btn-salvar" onclick="abrirFormulario()">Registrar</button>
+            {% else %}
+            <button class="btn btn-sortear" onclick="abrirModalPublico()">💰 Ver Valor e PIX</button>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Modal de Compra (múltiplos números) -->
+    <!-- Modal de Compra (ADMIN) -->
+    {% if current_user %}
     <div class="overlay" id="modalCompra">
         <div class="modal">
             <h2>Registrar Compra</h2>
@@ -133,6 +142,43 @@
             </form>
         </div>
     </div>
+    {% endif %}
+
+    <!-- Modal PÚBLICO: PIX + WhatsApp -->
+    <div class="overlay" id="modalPublico">
+        <div class="modal" style="max-width: 480px;">
+            <h2>💰 Resumo do Pedido</h2>
+            <div class="numeros-selecionados" id="publicNumerosPreview"></div>
+
+            <div class="pix-resumo">
+                <div class="pix-valor-total">
+                    <span>Total:</span>
+                    <strong id="publicValorTotal">R$ 0,00</strong>
+                </div>
+
+                {% if rifa.chave_pix %}
+                <div class="pix-section">
+                    <h3>📋 Chave PIX</h3>
+                    <div class="pix-key-box">
+                        <span id="pixKeyText">{{ rifa.chave_pix }}</span>
+                        <button type="button" class="btn btn-imagem" onclick="copiarPix()" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">Copiar</button>
+                    </div>
+                    <div class="pix-qr-container">
+                        <canvas id="pixQrCode" width="200" height="200"></canvas>
+                        <p style="font-size: 0.75rem; color: var(--cor-texto-suave); margin-top: 0.5rem;">Escaneie para copiar a chave</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if rifa.whatsapp_gerente %}
+            <button type="button" class="btn btn-whatsapp-grande" onclick="enviarWhatsAppGerente()">
+                📱 Enviar pedido via WhatsApp
+            </button>
+            {% endif %}
+            <button type="button" class="btn btn-cancelar" onclick="fecharModal()" style="width: 100%; margin-top: 0.5rem;">Fechar</button>
+        </div>
+    </div>
 
     <!-- Modal de Info (número vendido) -->
     <div class="overlay" id="modalInfo">
@@ -151,19 +197,196 @@
     <script>
         const totalNumeros = {{ rifa.quantidade_numeros }};
         const rifaNome = {{ rifa.nome | tojson }};
+        const valorNumero = {{ rifa.valor_numero }};
+        const chavePix = {{ (rifa.chave_pix or '') | tojson }};
+        const whatsappGerente = {{ (rifa.whatsapp_gerente or '') | tojson }};
+        const isAdmin = {{ 'true' if current_user else 'false' }};
         const pad = totalNumeros > 99 ? 3 : 2;
         let selecionados = new Set();
 
-        // Dados dos números para geração de imagem
         const mapaVendidos = {
             {% for num, info in mapa_vendidos.items() %}
             {{ num }}: { nome: {{ info.nome | tojson }}, telefone: {{ (info.telefone or 'Não informado') | tojson }} },
             {% endfor %}
         };
 
-        /**
-         * Gera uma imagem PNG da cartela usando Canvas API
-         */
+        function clicarNumero(el) {
+            const numero = parseInt(el.dataset.numero);
+
+            if (el.classList.contains('vendido')) {
+                document.getElementById('infoNumero').textContent = String(numero).padStart(pad, '0');
+                document.getElementById('infoNome').textContent = el.dataset.nome;
+                document.getElementById('infoTelefone').textContent = el.dataset.telefone;
+                document.getElementById('modalInfo').classList.add('ativo');
+                return;
+            }
+
+            if (selecionados.has(numero)) {
+                selecionados.delete(numero);
+                el.classList.remove('selecionado');
+                el.classList.add('disponivel');
+            } else {
+                selecionados.add(numero);
+                el.classList.remove('disponivel');
+                el.classList.add('selecionado');
+            }
+
+            atualizarBarra();
+        }
+
+        function atualizarBarra() {
+            const barra = document.getElementById('barraSelecao');
+            const texto = document.getElementById('barraTexto');
+            const qtd = selecionados.size;
+
+            if (qtd > 0) {
+                barra.classList.add('visivel');
+                texto.textContent = qtd === 1
+                    ? '1 número selecionado'
+                    : qtd + ' números selecionados';
+            } else {
+                barra.classList.remove('visivel');
+            }
+        }
+
+        function limparSelecao() {
+            selecionados.clear();
+            document.querySelectorAll('.numero-cell.selecionado').forEach(el => {
+                el.classList.remove('selecionado');
+                el.classList.add('disponivel');
+            });
+            atualizarBarra();
+        }
+
+        // ======== ADMIN: Registrar compra ========
+        function abrirFormulario() {
+            if (selecionados.size === 0) return;
+            const lista = Array.from(selecionados).sort((a, b) => a - b);
+            document.getElementById('inputNumeros').value = lista.join(',');
+            const preview = document.getElementById('numerosPreview');
+            preview.innerHTML = lista.map(n =>
+                '<span class="num-tag">' + String(n).padStart(pad, '0') + '</span>'
+            ).join('');
+            document.getElementById('inputNome').value = '';
+            document.getElementById('inputTelefone').value = '';
+            document.getElementById('modalCompra').classList.add('ativo');
+            setTimeout(() => document.getElementById('inputNome').focus(), 200);
+        }
+
+        // ======== PÚBLICO: PIX + WhatsApp ========
+        function abrirModalPublico() {
+            if (selecionados.size === 0) return;
+            const lista = Array.from(selecionados).sort((a, b) => a - b);
+
+            // Preview dos números
+            const preview = document.getElementById('publicNumerosPreview');
+            preview.innerHTML = lista.map(n =>
+                '<span class="num-tag">' + String(n).padStart(pad, '0') + '</span>'
+            ).join('');
+
+            // Valor total
+            const total = lista.length * valorNumero;
+            document.getElementById('publicValorTotal').textContent =
+                'R$ ' + total.toFixed(2).replace('.', ',');
+
+            // Gera QR Code simples da chave PIX
+            if (chavePix) {
+                gerarQrCodeSimples(chavePix);
+            }
+
+            document.getElementById('modalPublico').classList.add('ativo');
+        }
+
+        function copiarPix() {
+            navigator.clipboard.writeText(chavePix).then(() => {
+                const btn = event.target;
+                btn.textContent = '✅ Copiado!';
+                setTimeout(() => btn.textContent = 'Copiar', 2000);
+            });
+        }
+
+        function copiarLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('Link copiado!');
+            });
+        }
+
+        function enviarWhatsAppGerente() {
+            const lista = Array.from(selecionados).sort((a, b) => a - b);
+            const numerosStr = lista.map(n => String(n).padStart(pad, '0')).join(', ');
+            const total = lista.length * valorNumero;
+            const totalStr = 'R$ ' + total.toFixed(2).replace('.', ',');
+
+            let tel = whatsappGerente.replace(/\D/g, '');
+            if (!tel.startsWith('55')) tel = '55' + tel;
+
+            const msg = encodeURIComponent(
+                `Olá! Quero comprar ${lista.length} número(s) da rifa "${rifaNome}":\n\n` +
+                `📋 Números: ${numerosStr}\n` +
+                `💰 Total: ${totalStr}\n\n` +
+                `Vou efetuar o pagamento via PIX.`
+            );
+            window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
+        }
+
+        // QR Code simples usando Canvas (texto básico)
+        function gerarQrCodeSimples(text) {
+            const canvas = document.getElementById('pixQrCode');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const size = 200;
+            canvas.width = size;
+            canvas.height = size;
+
+            // Fundo branco
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, size, size);
+
+            // Texto central (fallback - chave PIX)
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 12px Inter, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Quebra texto se muito longo
+            const maxW = size - 20;
+            const words = text.split('');
+            let line = '';
+            let lines = [];
+            for (let ch of words) {
+                const test = line + ch;
+                if (ctx.measureText(test).width > maxW && line) {
+                    lines.push(line);
+                    line = ch;
+                } else {
+                    line = test;
+                }
+            }
+            lines.push(line);
+
+            // Borda
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(4, 4, size - 8, size - 8);
+
+            // Ícone PIX
+            ctx.font = 'bold 28px Arial';
+            ctx.fillText('PIX', size / 2, 40);
+
+            // Chave
+            ctx.font = '11px Inter, Arial, sans-serif';
+            const startY = 80;
+            lines.forEach((l, i) => {
+                ctx.fillText(l, size / 2, startY + i * 16);
+            });
+
+            // Label
+            ctx.font = '10px Inter, Arial, sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.fillText('Copie a chave acima', size / 2, size - 20);
+        }
+
+        // ======== Gerar Imagem da Cartela ========
         function gerarImagemCartela() {
             const btn = document.getElementById('btnGerarImagem');
             btn.textContent = '⏳ Gerando...';
@@ -181,7 +404,6 @@
                     const legendH = 40;
                     const gridW = cols * (cellSize + cellGap) - cellGap;
                     const gridH = rows * (cellSize + cellGap) - cellGap;
-
                     const canvasW = gridW + padding * 2;
                     const canvasH = headerH + statsH + legendH + gridH + padding * 2 + 20;
 
@@ -190,11 +412,9 @@
                     canvas.height = canvasH;
                     const ctx = canvas.getContext('2d');
 
-                    // Fundo
                     ctx.fillStyle = '#0f1117';
                     ctx.fillRect(0, 0, canvasW, canvasH);
 
-                    // Header gradient
                     const headerGrad = ctx.createLinearGradient(0, 0, canvasW, headerH);
                     headerGrad.addColorStop(0, '#1e1b4b');
                     headerGrad.addColorStop(0.5, '#312e81');
@@ -202,18 +422,15 @@
                     ctx.fillStyle = headerGrad;
                     ctx.fillRect(0, 0, canvasW, headerH);
 
-                    // Título
                     ctx.fillStyle = '#e0e7ff';
                     ctx.font = 'bold 22px Inter, Arial, sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillText('🎟️ ' + rifaNome, canvasW / 2, 45);
 
-                    // Subtítulo
                     ctx.fillStyle = '#9097b0';
                     ctx.font = '13px Inter, Arial, sans-serif';
                     ctx.fillText('Cartela de Números', canvasW / 2, 70);
 
-                    // Linha divisória
                     ctx.strokeStyle = '#2e3348';
                     ctx.lineWidth = 1;
                     ctx.beginPath();
@@ -221,22 +438,18 @@
                     ctx.lineTo(canvasW, headerH);
                     ctx.stroke();
 
-                    // Stats
                     const vendidosCount = Object.keys(mapaVendidos).length;
                     const disponiveisCount = totalNumeros - vendidosCount;
                     const statsY = headerH + 35;
 
                     ctx.textAlign = 'center';
                     ctx.font = 'bold 18px Inter, Arial, sans-serif';
-
-                    // Disponíveis
                     ctx.fillStyle = '#10b981';
                     ctx.fillText(String(disponiveisCount), canvasW / 4, statsY);
                     ctx.fillStyle = '#9097b0';
                     ctx.font = '10px Inter, Arial, sans-serif';
                     ctx.fillText('DISPONÍVEIS', canvasW / 4, statsY + 16);
 
-                    // Vendidos
                     ctx.font = 'bold 18px Inter, Arial, sans-serif';
                     ctx.fillStyle = '#ef4444';
                     ctx.fillText(String(vendidosCount), canvasW / 2, statsY);
@@ -244,7 +457,6 @@
                     ctx.font = '10px Inter, Arial, sans-serif';
                     ctx.fillText('VENDIDOS', canvasW / 2, statsY + 16);
 
-                    // Total
                     ctx.font = 'bold 18px Inter, Arial, sans-serif';
                     ctx.fillStyle = '#6366f1';
                     ctx.fillText(String(totalNumeros), (canvasW * 3) / 4, statsY);
@@ -252,7 +464,6 @@
                     ctx.font = '10px Inter, Arial, sans-serif';
                     ctx.fillText('TOTAL', (canvasW * 3) / 4, statsY + 16);
 
-                    // Legenda
                     const legendY = headerH + statsH + 15;
                     const legendItems = [
                         { color: '#10b981', label: 'Disponível' },
@@ -260,55 +471,38 @@
                     ];
                     const legendSpacing = 120;
                     const legendStart = canvasW / 2 - (legendItems.length * legendSpacing) / 2;
-
                     legendItems.forEach((item, i) => {
                         const x = legendStart + i * legendSpacing + 20;
-                        // Quadrado de cor
                         ctx.fillStyle = item.color;
                         ctx.beginPath();
                         ctx.roundRect(x, legendY - 5, 12, 12, 3);
                         ctx.fill();
-                        // Label
                         ctx.fillStyle = '#9097b0';
                         ctx.font = '12px Inter, Arial, sans-serif';
                         ctx.textAlign = 'left';
                         ctx.fillText(item.label, x + 18, legendY + 6);
                     });
 
-                    // Grid de números
                     const gridStartX = padding;
                     const gridStartY = headerH + statsH + legendH + 10;
-
                     for (let i = 1; i <= totalNumeros; i++) {
                         const col = (i - 1) % cols;
                         const row = Math.floor((i - 1) / cols);
                         const x = gridStartX + col * (cellSize + cellGap);
                         const y = gridStartY + row * (cellSize + cellGap);
-
                         const isVendido = i in mapaVendidos;
 
-                        // Fundo da célula
-                        if (isVendido) {
-                            ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
-                        } else {
-                            ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
-                        }
+                        ctx.fillStyle = isVendido ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
                         ctx.beginPath();
                         ctx.roundRect(x, y, cellSize, cellSize, 6);
                         ctx.fill();
 
-                        // Borda
-                        if (isVendido) {
-                            ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-                        } else {
-                            ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
-                        }
+                        ctx.strokeStyle = isVendido ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)';
                         ctx.lineWidth = 1.5;
                         ctx.beginPath();
                         ctx.roundRect(x, y, cellSize, cellSize, 6);
                         ctx.stroke();
 
-                        // Número
                         ctx.fillStyle = isVendido ? '#ef4444' : '#10b981';
                         ctx.font = 'bold 16px Inter, Arial, sans-serif';
                         ctx.textAlign = 'center';
@@ -317,14 +511,11 @@
                     }
 
                     ctx.textBaseline = 'alphabetic';
-
-                    // Marca d'água
                     ctx.fillStyle = 'rgba(144, 151, 176, 0.3)';
                     ctx.font = '10px Inter, Arial, sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillText('RifaFácil • schumaker.com.br', canvasW / 2, canvasH - 10);
 
-                    // Download
                     canvas.toBlob(blob => {
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
@@ -334,121 +525,32 @@
                         a.click();
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
-
                         btn.textContent = '📷 Gerar Imagem';
                         btn.disabled = false;
                     }, 'image/png');
                 } catch (err) {
                     console.error('Erro ao gerar imagem:', err);
-                    alert('Erro ao gerar a imagem. Tente novamente.');
+                    alert('Erro ao gerar a imagem.');
                     btn.textContent = '📷 Gerar Imagem';
                     btn.disabled = false;
                 }
             }, 100);
         }
 
-        /**
-         * Ao clicar em um número:
-         * - Disponível -> alterna seleção (pode selecionar vários)
-         * - Vendido -> mostra info do comprador
-         */
-        function clicarNumero(el) {
-            const numero = parseInt(el.dataset.numero);
-
-            if (el.classList.contains('vendido')) {
-                // Mostra informações do comprador
-                document.getElementById('infoNumero').textContent = String(numero).padStart(pad, '0');
-                document.getElementById('infoNome').textContent = el.dataset.nome;
-                document.getElementById('infoTelefone').textContent = el.dataset.telefone;
-                document.getElementById('modalInfo').classList.add('ativo');
-                return;
-            }
-
-            // Alterna seleção do número disponível
-            if (selecionados.has(numero)) {
-                selecionados.delete(numero);
-                el.classList.remove('selecionado');
-                el.classList.add('disponivel');
-            } else {
-                selecionados.add(numero);
-                el.classList.remove('disponivel');
-                el.classList.add('selecionado');
-            }
-
-            atualizarBarra();
-        }
-
-        /**
-         * Atualiza a barra flutuante com a contagem de selecionados
-         */
-        function atualizarBarra() {
-            const barra = document.getElementById('barraSelecao');
-            const texto = document.getElementById('barraTexto');
-            const qtd = selecionados.size;
-
-            if (qtd > 0) {
-                barra.classList.add('visivel');
-                texto.textContent = qtd === 1
-                    ? '1 número selecionado'
-                    : qtd + ' números selecionados';
-            } else {
-                barra.classList.remove('visivel');
-            }
-        }
-
-        /**
-         * Limpa todas as seleções
-         */
-        function limparSelecao() {
-            selecionados.clear();
-            document.querySelectorAll('.numero-cell.selecionado').forEach(el => {
-                el.classList.remove('selecionado');
-                el.classList.add('disponivel');
-            });
-            atualizarBarra();
-        }
-
-        /**
-         * Abre o formulário com os números selecionados
-         */
-        function abrirFormulario() {
-            if (selecionados.size === 0) return;
-
-            const lista = Array.from(selecionados).sort((a, b) => a - b);
-
-            // Preenche o campo hidden com os números
-            document.getElementById('inputNumeros').value = lista.join(',');
-
-            // Mostra preview dos números selecionados
-            const preview = document.getElementById('numerosPreview');
-            preview.innerHTML = lista.map(n =>
-                '<span class="num-tag">' + String(n).padStart(pad, '0') + '</span>'
-            ).join('');
-
-            document.getElementById('inputNome').value = '';
-            document.getElementById('inputTelefone').value = '';
-            document.getElementById('modalCompra').classList.add('ativo');
-            setTimeout(() => document.getElementById('inputNome').focus(), 200);
-        }
-
         function fecharModal() {
-            document.getElementById('modalCompra').classList.remove('ativo');
-            document.getElementById('modalInfo').classList.remove('ativo');
+            document.querySelectorAll('.overlay').forEach(o => o.classList.remove('ativo'));
         }
 
-        // Fecha modal ao clicar fora
         document.querySelectorAll('.overlay').forEach(overlay => {
             overlay.addEventListener('click', function(e) {
                 if (e.target === this) fecharModal();
             });
         });
 
-        // Fecha modal com ESC
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') fecharModal();
         });
 
-        // Remove flash messages após 4 segundos
         setTimeout(() => {
             document.querySelectorAll('.flash').forEach(el => {
                 el.style.opacity = '0';

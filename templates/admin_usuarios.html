@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Admins - Controle de Rifa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="header">
+        <h1>👥 Gerenciar Admins</h1>
+        <p>Adicione ou remova colaboradores</p>
+    </div>
+
+    <nav class="nav">
+        <a href="{{ url_for('index') }}">← Voltar</a>
+        <a href="{{ url_for('admin_usuarios') }}" class="ativo">Admins</a>
+    </nav>
+
+    <div class="container">
+
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+            {% for categoria, mensagem in mensagens %}
+            <div class="flash {{ categoria }}">{{ mensagem }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Novo Admin -->
+        <div class="sorteio-form-card">
+            <h2>➕ Novo Administrador</h2>
+            <form method="POST" action="{{ url_for('novo_usuario') }}">
+                <div class="form-grupo">
+                    <label for="inputUsername">Usuário (login)</label>
+                    <input type="text" id="inputUsername" name="username" placeholder="Ex: joao" required>
+                </div>
+                <div class="form-grupo">
+                    <label for="inputNome">Nome completo</label>
+                    <input type="text" id="inputNome" name="nome" placeholder="Ex: João Silva" required>
+                </div>
+                <div class="form-grupo">
+                    <label for="inputSenha">Senha (mín. 4 caracteres)</label>
+                    <input type="password" id="inputSenha" name="senha" placeholder="Senha de acesso" required minlength="4">
+                </div>
+                <button type="submit" class="btn btn-salvar" style="width: 100%;">Criar Admin</button>
+            </form>
+        </div>
+
+        <!-- Lista de Admins -->
+        <div class="tabela-wrapper">
+            <table class="tabela">
+                <thead>
+                    <tr>
+                        <th>Usuário</th>
+                        <th>Nome</th>
+                        <th>Cargo</th>
+                        <th>Criado em</th>
+                        <th style="text-align: center;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td><strong>{{ u.username }}</strong></td>
+                        <td>{{ u.nome }}</td>
+                        <td>
+                            {% if u.role == 'superadmin' %}
+                            <span class="badge-role superadmin">Super Admin</span>
+                            {% else %}
+                            <span class="badge-role admin">Admin</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ u.data_criacao }}</td>
+                        <td style="text-align: center;">
+                            {% if u.role != 'superadmin' %}
+                            <form action="{{ url_for('excluir_usuario', user_id=u.id) }}" method="POST"
+                                  onsubmit="return confirm('Excluir o admin {{ u.nome }}?')" style="display:inline;">
+                                <button type="submit" class="btn btn-excluir">Excluir</button>
+                            </form>
+                            {% else %}
+                            <span style="color: var(--cor-texto-suave); font-size: 0.8rem;">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Alterar Senha -->
+        <div class="sorteio-form-card" style="margin-top: 1.5rem;">
+            <h2>🔑 Alterar Minha Senha</h2>
+            <form method="POST" action="{{ url_for('alterar_senha') }}">
+                <div class="form-grupo">
+                    <label for="senhaAtual">Senha atual</label>
+                    <input type="password" id="senhaAtual" name="senha_atual" required>
+                </div>
+                <div class="form-grupo">
+                    <label for="novaSenha">Nova senha</label>
+                    <input type="password" id="novaSenha" name="nova_senha" required minlength="4">
+                </div>
+                <button type="submit" class="btn btn-salvar" style="width: 100%;">Alterar Senha</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                el.style.transition = '0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 4000);
+    </script>
+
+</body>
+</html>

@@ -1074,3 +1074,271 @@ body {
     }
 }
 
+/* --- Login --- */
+.login-card {
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    padding: 2rem;
+    margin-top: 1rem;
+}
+
+.login-voltar {
+    display: block;
+    text-align: center;
+    margin-top: 1.25rem;
+    color: var(--cor-texto-suave);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: var(--transicao);
+}
+
+.login-voltar:hover {
+    color: var(--cor-texto);
+}
+
+/* --- Dashboard Financeiro --- */
+.rifa-dashboard {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 0;
+    margin-bottom: 0.5rem;
+}
+
+.dash-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+    min-width: 100px;
+}
+
+.dash-label {
+    font-size: 0.7rem;
+    color: var(--cor-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+}
+
+.dash-value {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.dash-value.sucesso { color: var(--cor-disponivel); }
+.dash-value.alerta { color: #f59e0b; }
+
+.progress-bar {
+    height: 6px;
+    background: var(--cor-borda);
+    border-radius: 999px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cor-disponivel), #34d399);
+    border-radius: 999px;
+    transition: width 0.5s ease;
+}
+
+.dash-percent {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--cor-disponivel);
+}
+
+/* --- Search Bar --- */
+.search-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.search-bar input {
+    flex: 1;
+    padding: 0.7rem 1rem;
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    color: var(--cor-texto);
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    transition: var(--transicao);
+}
+
+.search-bar input:focus {
+    border-color: var(--cor-primaria);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.busca-vazio {
+    text-align: center;
+    padding: 2rem;
+    color: var(--cor-texto-suave);
+}
+
+/* --- PIX Section (modal público) --- */
+.pix-resumo {
+    margin: 1rem 0;
+}
+
+.pix-valor-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: var(--raio-sm);
+    margin-bottom: 1rem;
+}
+
+.pix-valor-total span {
+    font-size: 1rem;
+    color: var(--cor-texto-suave);
+}
+
+.pix-valor-total strong {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--cor-disponivel);
+}
+
+.pix-section {
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    padding: 1rem;
+}
+
+.pix-section h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--cor-texto);
+}
+
+.pix-key-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.75rem;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: var(--cor-texto);
+    word-break: break-all;
+}
+
+.pix-qr-container {
+    text-align: center;
+    padding: 0.75rem 0;
+}
+
+.pix-qr-container canvas {
+    border-radius: var(--raio-sm);
+    max-width: 100%;
+}
+
+/* --- WhatsApp Grande (público) --- */
+.btn-whatsapp-grande {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.85rem 1.5rem;
+    background: #25D366;
+    color: #fff;
+    border: none;
+    border-radius: var(--raio-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: var(--transicao);
+}
+
+.btn-whatsapp-grande:hover {
+    background: #1da851;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
+}
+
+/* --- Role Badges --- */
+.badge-role {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.badge-role.superadmin {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--cor-primaria);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.badge-role.admin {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--cor-disponivel);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* --- Histórico de Sorteios --- */
+.historico-section {
+    margin-top: 1.5rem;
+}
+
+.historico-section h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--cor-texto);
+}
+
+.historico-card {
+    background: var(--cor-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-sm);
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.historico-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+.historico-data {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cor-texto);
+}
+
+.historico-por {
+    font-size: 0.8rem;
+    color: var(--cor-texto-suave);
+}
+
+.historico-fonte {
+    font-size: 0.8rem;
+    color: var(--cor-texto-suave);
+    font-style: italic;
+}

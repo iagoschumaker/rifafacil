@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Controle de Rifa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="header">
+        <h1>🔐 Login</h1>
+        <p>Acesso ao painel de administração</p>
+    </div>
+
+    <div class="container" style="max-width: 400px;">
+
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+            {% for categoria, mensagem in mensagens %}
+            <div class="flash {{ categoria }}">{{ mensagem }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="login-card">
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-grupo">
+                    <label for="inputUsername">Usuário</label>
+                    <input type="text" id="inputUsername" name="username" placeholder="Digite seu usuário" required autofocus>
+                </div>
+                <div class="form-grupo">
+                    <label for="inputSenha">Senha</label>
+                    <input type="password" id="inputSenha" name="senha" placeholder="Digite sua senha" required>
+                </div>
+                <button type="submit" class="btn btn-salvar" style="width: 100%; margin-top: 0.5rem;">
+                    Entrar
+                </button>
+            </form>
+            <a href="{{ url_for('index') }}" class="login-voltar">← Voltar para as rifas</a>
+        </div>
+
+    </div>
+
+    <script>
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                el.style.transition = '0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 4000);
+    </script>
+
+</body>
+</html>
