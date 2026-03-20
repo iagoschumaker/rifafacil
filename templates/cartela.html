@@ -6,7 +6,6 @@
     <title>{{ rifa.nome }} - Controle de Rifa</title>
     <meta name="description" content="Cartela da rifa: {{ rifa.nome }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -165,13 +164,15 @@
 
                 {% if rifa.chave_pix %}
                 <div class="pix-section">
-                    <h3>📋 Chave PIX</h3>
-                    <div class="pix-key-box">
-                        <span id="pixKeyText">{{ rifa.chave_pix }}</span>
-                        <button type="button" class="btn btn-imagem" onclick="copiarPix()" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">Copiar</button>
+                    <h3>📋 Chave PIX (Copia e Cola)</h3>
+                    <div class="pix-key-box" onclick="copiarPix()" style="cursor: pointer;" title="Clique para copiar">
+                        <code id="pixKeyText" style="font-size: 1rem; word-break: break-all;">{{ rifa.chave_pix }}</code>
                     </div>
+                    <button type="button" class="btn btn-copiar-pix" id="btnCopiarPix" onclick="copiarPix()">
+                        📋 Copiar Chave PIX
+                    </button>
                     <div class="pix-qr-container">
-                        <div id="pixQrCode" style="display:inline-block;"></div>
+                        <img id="pixQrImg" src="" alt="QR Code PIX" style="width: 200px; height: 200px; border-radius: 8px; background: #fff; display: none;">
                         <p style="font-size: 0.75rem; color: var(--cor-texto-suave); margin-top: 0.5rem;">Escaneie ou copie a chave acima</p>
                     </div>
                 </div>
@@ -306,9 +307,26 @@
 
         function copiarPix() {
             navigator.clipboard.writeText(chavePix).then(function() {
-                var btn = event.target;
-                btn.textContent = '✅ Copiado!';
-                setTimeout(function() { btn.textContent = 'Copiar'; }, 2000);
+                var btn = document.getElementById('btnCopiarPix');
+                if (btn) {
+                    btn.textContent = '✅ Copiado!';
+                    btn.style.background = 'var(--cor-disponivel)';
+                    setTimeout(function() {
+                        btn.textContent = '📋 Copiar Chave PIX';
+                        btn.style.background = '';
+                    }, 2500);
+                }
+            }).catch(function() {
+                // Fallback: seleciona o texto
+                var el = document.getElementById('pixKeyText');
+                if (el) {
+                    var range = document.createRange();
+                    range.selectNodeContents(el);
+                    var sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    alert('Selecione e copie a chave manualmente (Ctrl+C)');
+                }
             });
         }
 
@@ -336,24 +354,14 @@
             window.open('https://wa.me/' + tel + '?text=' + msg, '_blank');
         }
 
-        var qrGerado = false;
         function gerarQrCodeSimples(text) {
-            var container = document.getElementById('pixQrCode');
-            if (!container || qrGerado) return;
-            container.innerHTML = '';
-            try {
-                new QRCode(container, {
-                    text: text,
-                    width: 200,
-                    height: 200,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-                qrGerado = true;
-            } catch (e) {
-                container.innerHTML = '<p style="color: var(--cor-texto-suave); font-size: 0.85rem;">QR Code indisponível</p>';
-            }
+            var img = document.getElementById('pixQrImg');
+            if (!img) return;
+            img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(text);
+            img.style.display = 'block';
+            img.onerror = function() {
+                img.style.display = 'none';
+            };
         }
 
         // ======== Gerar Imagem da Cartela ========

@@ -1550,3 +1550,28 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* --- Botão Copiar PIX --- */
+.btn-copiar-pix {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: var(--cor-primaria);
+    color: #fff;
+    border: none;
+    border-radius: var(--raio-sm);
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    margin-bottom: 0.75rem;
+    transition: var(--transicao);
+}
+
+.btn-copiar-pix:hover {
+    background: var(--cor-primaria-hover);
+    transform: translateY(-1px);
+}
