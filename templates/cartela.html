@@ -6,6 +6,7 @@
     <title>{{ rifa.nome }} - Controle de Rifa</title>
     <meta name="description" content="Cartela da rifa: {{ rifa.nome }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -170,8 +171,8 @@
                         <button type="button" class="btn btn-imagem" onclick="copiarPix()" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">Copiar</button>
                     </div>
                     <div class="pix-qr-container">
-                        <canvas id="pixQrCode" width="200" height="200"></canvas>
-                        <p style="font-size: 0.75rem; color: var(--cor-texto-suave); margin-top: 0.5rem;">Copie a chave acima para pagamento</p>
+                        <div id="pixQrCode" style="display:inline-block;"></div>
+                        <p style="font-size: 0.75rem; color: var(--cor-texto-suave); margin-top: 0.5rem;">Escaneie ou copie a chave acima</p>
                     </div>
                 </div>
                 {% endif %}
@@ -335,53 +336,24 @@
             window.open('https://wa.me/' + tel + '?text=' + msg, '_blank');
         }
 
+        var qrGerado = false;
         function gerarQrCodeSimples(text) {
-            var canvas = document.getElementById('pixQrCode');
-            if (!canvas) return;
-            var ctx = canvas.getContext('2d');
-            var size = 200;
-            canvas.width = size;
-            canvas.height = size;
-
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, size, size);
-
-            ctx.fillStyle = '#000';
-            ctx.font = 'bold 12px Inter, Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            var maxW = size - 20;
-            var chars = text.split('');
-            var line = '';
-            var lines = [];
-            for (var i = 0; i < chars.length; i++) {
-                var test = line + chars[i];
-                if (ctx.measureText(test).width > maxW && line) {
-                    lines.push(line);
-                    line = chars[i];
-                } else {
-                    line = test;
-                }
+            var container = document.getElementById('pixQrCode');
+            if (!container || qrGerado) return;
+            container.innerHTML = '';
+            try {
+                new QRCode(container, {
+                    text: text,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                qrGerado = true;
+            } catch (e) {
+                container.innerHTML = '<p style="color: var(--cor-texto-suave); font-size: 0.85rem;">QR Code indisponível</p>';
             }
-            lines.push(line);
-
-            ctx.strokeStyle = '#ccc';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(4, 4, size - 8, size - 8);
-
-            ctx.font = 'bold 28px Arial';
-            ctx.fillText('PIX', size / 2, 40);
-
-            ctx.font = '11px Inter, Arial, sans-serif';
-            var startY = 80;
-            for (var j = 0; j < lines.length; j++) {
-                ctx.fillText(lines[j], size / 2, startY + j * 16);
-            }
-
-            ctx.font = '10px Inter, Arial, sans-serif';
-            ctx.fillStyle = '#666';
-            ctx.fillText('Copie a chave acima', size / 2, size - 20);
         }
 
         // ======== Gerar Imagem da Cartela ========
